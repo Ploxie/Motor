@@ -17,8 +17,7 @@ public abstract class Window {
 	private int height;
 	@Getter
 	@Setter
-	private String title;
-	
+	private String title;	
 
 	public abstract void create();
 

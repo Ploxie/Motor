@@ -1,12 +1,14 @@
 package org.ploxie.vulkan.buffer;
 
-import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.CallbackI.V;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
 import org.lwjgl.vulkan.VkExtent2D;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
@@ -33,20 +35,35 @@ import static org.lwjgl.vulkan.VK10.*;
 import java.nio.LongBuffer;
 
 import lombok.Data;
+import lombok.Getter;
 
-@Data
 public class VulkanCommandBuffer {
 
+	@Getter
+	private final VkCommandBuffer handle;
 	private final VulkanLogicalDevice device;
-	private final VkCommandBuffer internal;
 	private final VulkanCommandPool pool;
-	private final PointerBuffer internalHandle;
 	
-	public void free() {
-		device.cleanup(pool, this);
-		
+	public VulkanCommandBuffer(VulkanLogicalDevice device, VulkanCommandPool pool, boolean primary) {
+		try(MemoryStack stack = MemoryStack.stackPush()){
+			VkCommandBufferAllocateInfo commandBufferAllocateInfo = VkCommandBufferAllocateInfo.callocStack(stack)
+					.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO)
+					.commandPool(pool.getHandle())
+					.level(primary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY)
+					.commandBufferCount(1);
+			
+			PointerBuffer commandBufferHandleBuffer = stack.mallocPointer(1);
+			int err = VK10.vkAllocateCommandBuffers(device.getHandle(), commandBufferAllocateInfo, commandBufferHandleBuffer);
+			if(err != VK_SUCCESS) {
+				throw new AssertionError("Failed to allocate render command buffer: "+VKUtil.translateVulkanResult(err));
+			}
+			
+			this.handle = new VkCommandBuffer(commandBufferHandleBuffer.get(0), device.getHandle());
+			this.device = device;
+			this.pool = pool;
+		}
 	}
-	
+		
 	public void begin() {
 		begin(false);
 	}
@@ -59,7 +76,7 @@ public class VulkanCommandBuffer {
 					.flags(simultaneous ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT  : VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)
 					.pInheritanceInfo(null);
 			
-			int err = vkBeginCommandBuffer(internal, beginInfo);
+			int err = vkBeginCommandBuffer(handle, beginInfo);
 			
 			if (err != VK_SUCCESS) {
 				throw new AssertionError("Failed to begin render command buffer: "+ VKUtil.translateVulkanResult(err));
@@ -68,7 +85,7 @@ public class VulkanCommandBuffer {
 	}
 	
 	public void end() {
-		int err = vkEndCommandBuffer(internal);
+		int err = vkEndCommandBuffer(handle);
 		if(err != VK_SUCCESS) {
 			throw new AssertionError("Failed to end render command buffer: "+VKUtil.translateVulkanResult(err));
 		}
@@ -85,7 +102,7 @@ public class VulkanCommandBuffer {
 					.dstOffset(destOffset)
 					.size(size);
 			
-			vkCmdCopyBuffer(internal, src.getHandle(), dest.getHandle(), copyRegion);
+			vkCmdCopyBuffer(handle, src.getHandle(), dest.getHandle(), copyRegion);
 		}
 	}
 	
@@ -126,13 +143,13 @@ public class VulkanCommandBuffer {
 						.framebuffer(frameBuffer.getHandle())
 						.renderArea(rect2D);
 			
-			vkCmdBeginRenderPass(internal, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(handle, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 						
 		}
 	}
 	
 	public void endRenderPass() {
-		vkCmdEndRenderPass(internal);
+		vkCmdEndRenderPass(handle);
 	}
 	
 	public void setViewport(VulkanViewportProperties viewport) {
@@ -146,7 +163,7 @@ public class VulkanCommandBuffer {
 					.minDepth(viewport.getMinDepth())
 					.maxDepth(viewport.getMaxDepth());
 			
-			vkCmdSetViewport(internal, 0, viewportInternal);
+			vkCmdSetViewport(handle, 0, viewportInternal);
 		}
 	}
 	
@@ -162,12 +179,12 @@ public class VulkanCommandBuffer {
 			rect2D.offset(offset2D);
 			rect2D.extent(extent2D);
 			
-			vkCmdSetScissor(internal, 0 , rect2D);
+			vkCmdSetScissor(handle, 0 , rect2D);
 		}
 	}
 	
 	public void bindPipeline(VulkanGraphicsPipeline graphicsPipeline) {
-		vkCmdBindPipeline(internal, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getHandle());
+		vkCmdBindPipeline(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.getHandle());
 	}
 	
 	public void bindVertexBuffers(VulkanBuffer vertexBuffer) {
@@ -176,7 +193,7 @@ public class VulkanCommandBuffer {
 			pBuffers.put(0, vertexBuffer.getHandle());
 			LongBuffer pOffsets = stack.mallocLong(1);
 			pOffsets.put(0,0);
-			vkCmdBindVertexBuffers(internal, 0, pBuffers, pOffsets);
+			vkCmdBindVertexBuffers(handle, 0, pBuffers, pOffsets);
 		}
 	}
 	
@@ -192,7 +209,7 @@ public class VulkanCommandBuffer {
 			}
 			
 			
-			vkCmdBindIndexBuffer(internal, indexBuffer.getHandle(), 0, indexType);
+			vkCmdBindIndexBuffer(handle, indexBuffer.getHandle(), 0, indexType);
 		}
 	}
 	
@@ -203,16 +220,16 @@ public class VulkanCommandBuffer {
 				pDescriptorSets.put(descriptorSet.getHandle());
 			}
 			pDescriptorSets.flip();
-			vkCmdBindDescriptorSets(internal, VK_PIPELINE_BIND_POINT_GRAPHICS, layout.getHandle(), 0, pDescriptorSets, null);
+			vkCmdBindDescriptorSets(handle, VK_PIPELINE_BIND_POINT_GRAPHICS, layout.getHandle(), 0, pDescriptorSets, null);
 		}
 	}
 	
 	public void draw(int vertexCount, int instanceCount, int firstVertex, int firstInstance) {
-		vkCmdDraw(internal, vertexCount, instanceCount, firstVertex, firstInstance);
+		vkCmdDraw(handle, vertexCount, instanceCount, firstVertex, firstInstance);
 	}
 	
 	public void drawIndexed(int indexCount, int instanceCount, int firstIndex, int vertexOffset, int firstInstance) {
-		vkCmdDrawIndexed(internal, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+		vkCmdDrawIndexed(handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 	}
 
 	public void setImageLayout(VulkanImage image, VulkanImageLayout oldLayout, VulkanImageLayout newLayout) {
@@ -263,7 +280,7 @@ public class VulkanCommandBuffer {
 				.baseArrayLayer(0)
 				.layerCount(1);
 			
-			vkCmdPipelineBarrier(internal, sourceStage, destinationStage, 0, null, null, barrier);
+			vkCmdPipelineBarrier(handle, sourceStage, destinationStage, 0, null, null, barrier);
 		}		
 	}
 	

@@ -11,8 +11,8 @@ public class GLWindow extends Window{
 
 	public GLWindow() {
 		super(GLContext.getConfiguration().getDisplayTitle(),
-			  GLContext.getConfiguration().getScreenResolutionX(),
-			  GLContext.getConfiguration().getScreenResolutionY());		
+			  GLContext.getConfiguration().getWindowWidth(),
+			  GLContext.getConfiguration().getWindowHeight());		
 	}
 
 	@Override

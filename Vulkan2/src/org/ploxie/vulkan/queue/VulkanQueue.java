@@ -6,7 +6,6 @@ import org.lwjgl.vulkan.VkPresentInfoKHR;
 import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.ploxie.vulkan.buffer.VulkanCommandBuffer;
-import org.ploxie.vulkan.command.VulkanPresentInfo;
 import org.ploxie.vulkan.command.VulkanSubmitInfo;
 import org.ploxie.vulkan.device.VulkanLogicalDevice;
 import org.ploxie.vulkan.utils.VKUtil;
@@ -28,7 +27,7 @@ public class VulkanQueue {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			PointerBuffer commandPointerBuffer = stack.mallocPointer(commandBuffers.length);
 			for(VulkanCommandBuffer buffer : commandBuffers) {
-				commandPointerBuffer.put(buffer.getInternal());
+				commandPointerBuffer.put(buffer.getHandle());
 			}
 			
 			commandPointerBuffer.flip();
@@ -44,7 +43,7 @@ public class VulkanQueue {
 			throw new AssertionError("Failed to submit render queue: "+ VKUtil.translateVulkanResult(err));
 		}
 	}
-
+	
 	public void present(VkPresentInfoKHR presentInfoKHR) {
 		int err = vkQueuePresentKHR(internal, presentInfoKHR);
 		if (err != VK_SUCCESS) {
@@ -52,14 +51,6 @@ public class VulkanQueue {
 		}
 	}
 
-
-	public void present(VulkanPresentInfo presentInfo) {
-		int err = vkQueuePresentKHR(internal, presentInfo.getInternal());
-		if (err != VK_SUCCESS) {
-			throw new AssertionError("Failed to present the swapchain image: "+ VKUtil.translateVulkanResult(err));
-		}
-	}
-	
 	public void waitIdle() {
 		int err = vkQueueWaitIdle(internal);
 		if (err != VK_SUCCESS) {

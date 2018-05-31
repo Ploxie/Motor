@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkAttachmentDescription;
 import org.lwjgl.vulkan.VkAttachmentReference;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
@@ -101,135 +102,174 @@ import lombok.Data;
 @Data
 public class VulkanLogicalDevice {
 
-	private final VulkanPhysicalDevice physicalDevice;
-	private final VkDevice internal;
+	public final VulkanPhysicalDevice physicalDevice;
+	public final VkDevice internal;
 	
-	private Map<String, VulkanQueue> vulkanQueues = new HashMap<>();
-	
-	private VulkanQueue graphicsQueue;
-	
-	private VulkanCommandPool graphicsCommandPool;
-	
-	private int graphicsQueueFamilyIndex;
-	
-	public VulkanLogicalDevice(VulkanPhysicalDevice physicalDevice, VkDevice internal) {
-		this.physicalDevice = physicalDevice;
-		this.internal = internal;
+	private Map<String, VulkanQueue> queues = new HashMap<>();	
+	private Map<Integer, VulkanCommandPool> commandPools = new HashMap<>();	
 		
-		VulkanQueueFamilyPropertiesList queueFamilyPropertiesList = physicalDevice.getQueueFamilyProperties();
-		VulkanQueueFamilyProperties queueFamilyGraphics = queueFamilyPropertiesList.getFirstGraphicsQueue();
-		
-		graphicsQueueFamilyIndex = queueFamilyGraphics.getIndex();
-		graphicsCommandPool = createCommandPool(graphicsQueueFamilyIndex);		
-		graphicsQueue = getDeviceQueue(queueFamilyGraphics.getIndex(), 0);
-	}
-	
 	public VulkanQueue getDeviceQueue(int queueFamilyIndex, int queueIndex) {
 		String cacheKey = queueFamilyIndex + ":"+queueIndex;
-		VulkanQueue queue = vulkanQueues.get(cacheKey);
+		VulkanQueue queue = queues.get(cacheKey);
 		if(queue == null) {
 			try (MemoryStack stack = MemoryStack.stackPush()){
 				PointerBuffer pQueue = stack.mallocPointer(1);
 				vkGetDeviceQueue(internal, queueFamilyIndex, queueIndex, pQueue);
 				long queueHandle = pQueue.get(0);
 				queue = new VulkanQueue(this, new VkQueue(queueHandle, internal));
-				vulkanQueues.put(cacheKey, queue);
+				queues.put(cacheKey, queue);
 			}
 		}
 			
 		return queue;
 	}
 	
-	public VulkanSwapChain createSwapChain(long windowHandle,VulkanExtent2D windowDimensions, VulkanSurfacePresentMode surfacePresentMode, VulkanSwapChain oldChain) {
+	public VulkanSwapChain createSwapChain(long windowHandle, VulkanExtent2D windowDimensions, VulkanSurfacePresentMode surfacePresentMode, VulkanSwapChain oldChain) {
 		VulkanInstance instance = getPhysicalDevice().getInstance();
 		VulkanSurface surface = instance.getWindowSurface(windowHandle);
 		return createSwapChain(surface, windowDimensions, surfacePresentMode, oldChain);
 	}
 	
-	public VulkanSwapChain createSwapChain(VulkanSurface surface, VulkanExtent2D windowDimensions, VulkanSurfacePresentMode presentMode, VulkanSwapChain oldSwapChain) {
-		try(MemoryStack stack = MemoryStack.stackPush()){
+	public VulkanSwapChain createSwapChain(VulkanSurface surface, VulkanExtent2D windowDimensions, VulkanSurfacePresentMode surfacePresentMode, VulkanSwapChain oldChain) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
 			VulkanSurfaceCapabilities surfaceCapabilities = physicalDevice.getSurfaceCapabilities(stack, surface);
 			List<VulkanSurfacePresentMode> presentModes = physicalDevice.getSurfacePresentModes(surface);
-			if(!presentModes.contains(presentMode)) {
-				throw new AssertionError("Surface present mode not supported: "+presentMode);
+			if (!presentModes.contains(surfacePresentMode)) {
+				throw new AssertionError("Surface present mode not supported: " + surfacePresentMode);
 			}
 			List<VulkanSurfaceFormat> formats = physicalDevice.getSurfaceFormats(surface);
 			VulkanSurfaceFormat format = pickFormat(formats);
-			
+
+			/**
+			 * The first one is the number of images in the swap chain,
+			 * essentially the queue length. The implementation specifies the
+			 * minimum amount of images to function properly and we'll try to
+			 * have one more than that to properly implement triple buffering.
+			 * 
+			 */
 			int swapImageCount = surfaceCapabilities.getMinImageCount() + 1;
-			if(surfaceCapabilities.getMaxImageCount() > 0 && swapImageCount > surfaceCapabilities.getMaxImageCount()) {
+			if (surfaceCapabilities.getMaxImageCount() > 0
+					&& swapImageCount > surfaceCapabilities
+							.getMaxImageCount()) {
 				swapImageCount = surfaceCapabilities.getMaxImageCount();
 			}
 			
 			VulkanExtent2D swapExtent = chooseSwapExtent(surfaceCapabilities, windowDimensions);
 			VkExtent2D internalSwapExtent = VkExtent2D.callocStack(stack).set(swapExtent.getWidth(), swapExtent.getHeight());
+			/**
+			 * The imageArrayLayers specifies the amount of layers each image
+			 * consists of. This is always 1 unless you are developing a
+			 * stereoscopic 3D application. The imageUsage bit field specifies
+			 * what kind of operations we'll use the images in the swap chain
+			 * for. In this tutorial we're going to render directly to them,
+			 * which means that they're used as color attachment. It is also
+			 * possible that you'll render images to a separate image first to
+			 * perform operations like post-processing. In that case you may use
+			 * a value like VK_IMAGE_USAGE_TRANSFER_DST_BIT instead and use a
+			 * memory operation to transfer the rendered image to a swap chain
+			 * image.
+			 * 
+			 * 
+			 */
 			
 			int preTransform;
-			if((surfaceCapabilities.getSupportedTransforms() & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0) {
+			if ((surfaceCapabilities.getSupportedTransforms()
+					& VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) != 0) {
 				preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
-			}else {
+			} else {
 				preTransform = surfaceCapabilities.getCurrentTransform();
 			}
 			
-			VulkanQueueFamilyPropertiesList vulkanQueueFamilyPropertiesList = physicalDevice.getQueueFamilyProperties();
-			IntBuffer supportsPresent = stack.mallocInt(vulkanQueueFamilyPropertiesList.size());
-			for(VulkanQueueFamilyProperties properties : vulkanQueueFamilyPropertiesList) {
-				int err = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice.getInternal(), properties.getIndex(), surface.getHandle(), supportsPresent);
-				if(err != VK_SUCCESS) {
-					throw new AssertionError("Failed to physical device surface support: "+VKUtil.translateVulkanResult(err));
+			VulkanQueueFamilyPropertiesList vulkanQueueFamilyPropertiesList = physicalDevice
+					.getQueueFamilyProperties();
+			
+			IntBuffer supportsPresent = stack
+					.mallocInt(vulkanQueueFamilyPropertiesList.size());
+			
+			for (VulkanQueueFamilyProperties properties : vulkanQueueFamilyPropertiesList) {
+				int err = vkGetPhysicalDeviceSurfaceSupportKHR(
+						physicalDevice.getInternal(), properties.getIndex(),
+						surface.getHandle(), supportsPresent);
+				if (err != VK_SUCCESS) {
+					throw new AssertionError(
+							"Failed to physical device surface support: "
+									+ VKUtil.translateVulkanResult(err));
 				}
 				supportsPresent.position(supportsPresent.position() + 1);
 			}
 			
-			VkSwapchainCreateInfoKHR swapChainCreate = VkSwapchainCreateInfoKHR.callocStack(stack);
-			swapChainCreate
-			.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR)
-			.pNext(NULL)
-			.surface(surface.getHandle())
-			.minImageCount(swapImageCount)
-			.imageFormat(format.getColorFormat())
-			.imageColorSpace(format.getColorSpace())
-			.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
-			.preTransform(preTransform)
-			.imageArrayLayers(1)
-			.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE)
-			.pQueueFamilyIndices(null)
-			.presentMode(presentMode.getID())
-			.clipped(true)
-			.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
-			.imageExtent(internalSwapExtent)
-			.oldSwapchain(oldSwapChain == null ? VK_NULL_HANDLE : oldSwapChain.getHandle());
+			VkSwapchainCreateInfoKHR swapchainCreate = VkSwapchainCreateInfoKHR.callocStack(stack);
+			swapchainCreate
+				.sType(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR)
+				.pNext(NULL)
+				.surface(surface.getHandle())
+				.minImageCount(swapImageCount)
+				.imageFormat(format.getColorFormat())
+				.imageColorSpace(format.getColorSpace())
+				.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+				.preTransform(preTransform)
+				.imageArrayLayers(1)
+				.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE)
+				.pQueueFamilyIndices(null)
+				.presentMode(surfacePresentMode.getID())
+				.oldSwapchain(VK_NULL_HANDLE)
+				.clipped(true)
+				.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+				.imageExtent(internalSwapExtent)
+				.oldSwapchain(oldChain == null ? VK_NULL_HANDLE : oldChain.getHandle());
 			
 			LongBuffer swapChainPtrBuffer = stack.mallocLong(1);
-			int err = vkCreateSwapchainKHR(internal, swapChainCreate, null, swapChainPtrBuffer);
-			if(err != VK_SUCCESS) {
-				throw new AssertionError("Failed to create swap chain: "+VKUtil.translateVulkanResult(err));
+			int err = vkCreateSwapchainKHR(internal, swapchainCreate, null, swapChainPtrBuffer);
+			if (err != VK_SUCCESS) {
+				throw new AssertionError("Failed to create swap chain: "
+						+ VKUtil.translateVulkanResult(err));
 			}
 			
-			if(oldSwapChain != null) {
-				cleanup(oldSwapChain);
+			if (oldChain != null) {
+				// If we just re-created an existing swapchain, we should destroy the
+				// old swapchain at this point.
+				// Note: destroying the swapchain also cleans up all its associated
+				// presentable images once the platform is done with them.
+				cleanup(oldChain);
 			}
 			
 			IntBuffer pSwapchainImageCount = stack.mallocInt(1);
 			long swapchain = swapChainPtrBuffer.get(0);
 			
 			err = vkGetSwapchainImagesKHR(internal, swapchain, pSwapchainImageCount, null);
-			if(err != VK_SUCCESS) {
-				throw new AssertionError("Failed to get number of swapchain images: "+VKUtil.translateVulkanResult(err));
+			if (err != VK_SUCCESS) {
+				throw new AssertionError(
+						"Failed to get number of swapchain images: "
+								+ VKUtil.translateVulkanResult(err));
 			}
 			
+			//device can provide more swap images than we ask for, thats why we need to query it again
 			int actualSwapImageCount = pSwapchainImageCount.get(0);
 			LongBuffer pSwapchainImages = stack.mallocLong(actualSwapImageCount);
 			err = vkGetSwapchainImagesKHR(internal, swapchain, pSwapchainImageCount, pSwapchainImages);
-			if(err != VK_SUCCESS) {
-				throw new AssertionError("Failed to get swapchain images: "+VKUtil.translateVulkanResult(err));
+			if (err != VK_SUCCESS) {
+				throw new AssertionError("Failed to get swapchain images: "
+						+ VKUtil.translateVulkanResult(err));
+			}
+						
+			VulkanImage[] swapchainImages = new VulkanImage[actualSwapImageCount];
+			for (int i = 0; i < actualSwapImageCount; i++) {
+				swapchainImages[i] = new VulkanImage(
+						pSwapchainImages.get(i),
+						windowDimensions.getWidth(),
+						windowDimensions.getHeight(),
+						1
+				);
 			}
 			
-			VulkanImage[] swapchainImages = new VulkanImage[actualSwapImageCount];
-			for(int i = 0 ; i < actualSwapImageCount;i++) {
-				swapchainImages[i] = new VulkanImage(pSwapchainImages.get(i), windowDimensions.getWidth(), windowDimensions.getHeight(), 1);
-			}
-			return new VulkanSwapChain(this, swapChainPtrBuffer, windowDimensions, surface, swapchainImages, format);
+			/**
+			 * With Vulkan it's possible that your swap chain becomes invalid or
+			 * unoptimized while your application is running, for example
+			 * because the window was resized. In that case the swap chain
+			 * actually needs to be recreated from scratch and a reference to
+			 * the old one must be specified in this field.
+			 */
+			return new VulkanSwapChain(swapchain, windowDimensions, surface, swapchainImages, format, swapChainPtrBuffer);
 		}
 	}
 	
@@ -554,6 +594,14 @@ public class VulkanLogicalDevice {
 		}
 	}
 	
+	public VulkanCommandPool getCommandPool(int queueFamilyIndex) {
+		VulkanCommandPool pool = commandPools.get(queueFamilyIndex);
+		if(pool != null) {
+			return pool;
+		}			
+		return createCommandPool(queueFamilyIndex);
+	}
+	
 	public VulkanCommandBuffer createCommandBuffer(VulkanCommandPool pool, boolean primary) {
 		return createCommandBuffers(pool, primary, 1)[0];
 	}
@@ -574,7 +622,7 @@ public class VulkanLogicalDevice {
 			}
 			
 			for (int i = 0; i < count; i++) {
-				commandBuffers[i] = new VulkanCommandBuffer(this,new VkCommandBuffer(commandBufferHandleBuffer.get(i), internal), pool);
+				commandBuffers[i] = new VulkanCommandBuffer(this,new VkCommandBuffer(commandBufferHandleBuffer.get(i), internal), pool, commandBufferHandleBuffer);
 			}
 			
 			return commandBuffers;
@@ -704,7 +752,7 @@ public class VulkanLogicalDevice {
 		vkFreeCommandBuffers(internal, commandPool.getHandle(), commandBuffer.getInternal());
 	}
 	
-	private VulkanExtent2D chooseSwapExtent(VulkanSurfaceCapabilities surfaceCapabilities, VulkanExtent2D windowDimensions) {
+	public VulkanExtent2D chooseSwapExtent(VulkanSurfaceCapabilities surfaceCapabilities, VulkanExtent2D windowDimensions) {
 		if(surfaceCapabilities.getCurrentExtent().getWidth() != -1) {
 			return surfaceCapabilities.getCurrentExtent();
 		}else {
@@ -716,7 +764,7 @@ public class VulkanLogicalDevice {
 		}
 	}
 	
-	private VulkanSurfaceFormat pickFormat(List<VulkanSurfaceFormat> formats) {
+	public VulkanSurfaceFormat pickFormat(List<VulkanSurfaceFormat> formats) {
 		if (formats.size()==1) {
 			VulkanSurfaceFormat format = formats.get(0);
 			if (format.getColorFormat() == VK_FORMAT_UNDEFINED) {

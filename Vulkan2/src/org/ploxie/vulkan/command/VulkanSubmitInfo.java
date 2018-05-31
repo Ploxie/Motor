@@ -1,14 +1,11 @@
 package org.ploxie.vulkan.command;
 
-import static org.lwjgl.system.MemoryUtil.memAllocPointer;
-
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkSubmitInfo;
-import org.ploxie.vulkan.buffer.VulkanCommandBuffer;
 import org.ploxie.vulkan.queue.VulkanQueue;
 import org.ploxie.vulkan.synchronization.VulkanFence;
 import org.ploxie.vulkan.utils.VKUtil;
@@ -21,25 +18,21 @@ public class VulkanSubmitInfo {
 	private VkSubmitInfo internal;
 
 	private VulkanFence fence;
-	
-	private PointerBuffer pCommandBuffer;
-	
+
 	public VulkanSubmitInfo() {
 		internal = VkSubmitInfo.calloc().sType(VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO).pNext(0);
-		
-		pCommandBuffer = memAllocPointer(1);
 	}
 
+	public VulkanSubmitInfo(PointerBuffer buffers) {
+		this();
 
-	public void setCommandBuffers(PointerBuffer buffers) {	
+		setCommandBuffers(buffers);
+	}
+
+	public void setCommandBuffers(PointerBuffer buffers) {
+
 		internal.pCommandBuffers(buffers);
 	}
-	
-	public void setCommandBuffer(VulkanCommandBuffer commandBuffer) {
-		pCommandBuffer.put(0, commandBuffer.getInternal());
-		internal.pCommandBuffers(pCommandBuffer);
-	}
-	
 
 	public void setWaitSemaphores(LongBuffer semaphores) {
 
