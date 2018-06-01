@@ -264,6 +264,11 @@ public class Matrix4f implements Cloneable {
 		return floatBuffer;
 	}
 
+	public ByteBuffer fillBuffer(final ByteBuffer byteBuffer) {
+		byteBuffer.asFloatBuffer().put(values);
+		return byteBuffer;
+	}
+	
 	public Matrix4f makePerspective(final float fovy, final float aspect, final float zNear, final float zFar) {
 		float radians = Math.toRadians(fovy / 2f);
 		float deltaZ = zFar - zNear;

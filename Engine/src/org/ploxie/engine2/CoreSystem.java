@@ -44,6 +44,10 @@ public class CoreSystem {
 		renderEngine.update();
 	}
 
+	public void preRender() {
+		window.preRender();
+	}
+	
 	public void render() {
 		renderEngine.render();
 		window.draw();

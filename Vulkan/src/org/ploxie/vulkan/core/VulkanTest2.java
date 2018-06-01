@@ -131,23 +131,23 @@ public class VulkanTest2 {
 		VulkanCommandPool pool = device.createCommandPool(queueFamilyGraphics.getIndex());
 		
 		
-		int stride = 2 * 4 + 3 * 4;
+		int stride = 3 * 4 + 3 * 4;
 		BindingDescription bindingDescription = new BindingDescription(0, stride);
 		AttributeDescription[] attributeDescriptions = new AttributeDescription[] {
-				new AttributeDescription(0, 0, VK_FORMAT_R32G32_SFLOAT, 0),
-				new AttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, 8),
+				new AttributeDescription(0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0),
+				new AttributeDescription(1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12),
 		};
 		
 		VertexInputInfo vertexInputInfo = new VertexInputInfo(bindingDescription, attributeDescriptions);
 		pipelineProperties.setVertexInputInfo(vertexInputInfo);
 	
 		
-		ByteBuffer vertexBytes = memAlloc(8 * 4 + 12 * 4);
+		ByteBuffer vertexBytes = memAlloc(12 * 4 + 12 * 4);
 		FloatBuffer fb = vertexBytes.asFloatBuffer();
-		fb.put(-0.5f).put(-0.5f) .put(1).put(0).put(0);
-		fb.put(0.5f).put(-0.5f)  .put(0).put(1).put(0);
-		fb.put(0.5f).put(0.5f).put(0).put(0).put(1);
-		fb.put(-0.5f).put(0.5f).put(0).put(1).put(1);
+		fb.put(-0.5f) .put(-0.5f) .put(1).put(1).put(0).put(0);
+		fb.put( 0.5f) .put(-0.5f) .put(1).put(0).put(1).put(0);
+		fb.put( 0.5f) .put( 0.5f) .put(1).put(0).put(0).put(1);
+		fb.put(-0.5f) .put( 0.5f) .put(1).put(0).put(1).put(1);
 		fb.flip();
 		
 		ByteBuffer indexBytes = memAlloc(6 * 4);
@@ -338,7 +338,7 @@ public class VulkanTest2 {
 		
 		commandBuffer.begin();
 		
-			commandBuffer.beginRenderPass(renderPass, framebuffer, renderArea, new Color(0.47f, 0.47f, 0.47f, 1.0f));
+			commandBuffer.beginRenderPass(renderPass, framebuffer,true, renderArea, new Color(0.47f, 0.47f, 0.47f, 1.0f));
 			
 				// update viewport and scissor
 				

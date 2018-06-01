@@ -64,7 +64,7 @@ public class CoreEngine {
 				}
 			}
 			if (render) {
-				// System.out.println(fps);
+				system.preRender();
 				system.render();
 				frames++;
 			} else {

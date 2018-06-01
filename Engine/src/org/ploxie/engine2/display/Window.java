@@ -39,4 +39,8 @@ public abstract class Window {
 		this.handle = id;
 	}	
 	
+	public void preRender() {
+		
+	}
+	
 }

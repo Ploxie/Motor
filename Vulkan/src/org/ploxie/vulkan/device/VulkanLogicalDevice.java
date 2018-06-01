@@ -3,6 +3,7 @@ package org.ploxie.vulkan.device;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +81,7 @@ import org.ploxie.vulkan.queue.VulkanQueue;
 import org.ploxie.vulkan.queue.VulkanQueueFamilyProperties;
 import org.ploxie.vulkan.queue.VulkanQueueFamilyPropertiesList;
 import org.ploxie.vulkan.render.VulkanRenderPass;
+import org.ploxie.vulkan.render.VulkanSubpass;
 import org.ploxie.vulkan.shader.VulkanShaderModule;
 import org.ploxie.vulkan.shader.VulkanShaderModules;
 import org.ploxie.vulkan.surface.VulkanSurface;
@@ -347,7 +349,10 @@ public class VulkanLogicalDevice {
 				throw new AssertionError("Failed to create clear render pass: "+VKUtil.translateVulkanResult(err));
 			}
 			
-			return new VulkanRenderPass(renderPassHandleBuffer.get(0), this);			
+			List<VulkanSubpass> subPasses = new ArrayList<VulkanSubpass>();
+			subPasses.add(new VulkanSubpass(0));
+			
+			return new VulkanRenderPass(renderPassHandleBuffer.get(0), subPasses, this);			
 		}		
 	}
 	
@@ -581,7 +586,7 @@ public class VulkanLogicalDevice {
 					.callocStack(stack)
 					.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO)
 					.queueFamilyIndex(queueFamilyIndex)
-					.flags(0);
+					.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 			
 			LongBuffer commandPoolHandleBuffer = stack.mallocLong(1);
 			int err = vkCreateCommandPool(internal, commandPoolCreateInfo, null, commandPoolHandleBuffer);

@@ -8,6 +8,7 @@ import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkClearValue;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferBeginInfo;
+import org.lwjgl.vulkan.VkCommandBufferInheritanceInfo;
 import org.lwjgl.vulkan.VkExtent2D;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
 import org.lwjgl.vulkan.VkOffset2D;
@@ -24,6 +25,7 @@ import org.ploxie.vulkan.math.VulkanRect2D;
 import org.ploxie.vulkan.pipeline.VulkanGraphicsPipeline;
 import org.ploxie.vulkan.pipeline.VulkanGraphicsPipelineLayout;
 import org.ploxie.vulkan.render.VulkanRenderPass;
+import org.ploxie.vulkan.render.VulkanSubpass;
 import org.ploxie.vulkan.utils.VKUtil;
 import org.ploxie.vulkan.viewport.VulkanViewportProperties;
 
@@ -67,10 +69,45 @@ public class VulkanCommandBuffer {
 		}
 	}
 	
+	public void beginSecondary(VulkanRenderPass renderPass, VulkanSubpass subpass, VulkanFrameBuffer framebuffer, boolean simultaneous) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			VkCommandBufferInheritanceInfo inheritanceInfo = VkCommandBufferInheritanceInfo
+					.callocStack(stack)
+					.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO)
+					.pNext(NULL)
+					.renderPass(renderPass.getHandle())
+					.subpass(subpass.getIndex())
+					.framebuffer(framebuffer.getHandle());
+			
+			
+			//todo statistics : https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/VkQueryPipelineStatisticFlagBits.html
+			
+			VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo
+					.callocStack(stack)
+					.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO)
+					.flags(VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT)
+					.pInheritanceInfo(inheritanceInfo);
+	
+			int err = vkBeginCommandBuffer(internal, beginInfo);
+			
+			if (err != VK_SUCCESS) {
+				throw new AssertionError(
+						"Failed to begin render command buffer: " + VKUtil.translateVulkanResult(err));
+			}
+		}
+	}
+	
 	public void end() {
 		int err = vkEndCommandBuffer(internal);
 		if(err != VK_SUCCESS) {
 			throw new AssertionError("Failed to end render command buffer: "+VKUtil.translateVulkanResult(err));
+		}
+	}
+	
+	public void reset(){		
+		int err = vkResetCommandBuffer(internal, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		if(err != VK_SUCCESS) {
+			throw new AssertionError("Failed to reset command buffer: "+VKUtil.translateVulkanResult(err));
 		}
 	}
 	
@@ -89,7 +126,7 @@ public class VulkanCommandBuffer {
 		}
 	}
 	
-	public void beginRenderPass(VulkanRenderPass renderPass, VulkanFrameBuffer frameBuffer, VulkanRect2D renderArea, Color clearColor) {
+	public void beginRenderPass(VulkanRenderPass renderPass, VulkanFrameBuffer frameBuffer,boolean inlineCommands, VulkanRect2D renderArea, Color clearColor) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
 			
@@ -126,7 +163,7 @@ public class VulkanCommandBuffer {
 						.framebuffer(frameBuffer.getHandle())
 						.renderArea(rect2D);
 			
-			vkCmdBeginRenderPass(internal, renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRenderPass(internal, renderPassBeginInfo, inlineCommands ? VK_SUBPASS_CONTENTS_INLINE : VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 						
 		}
 	}
@@ -265,6 +302,21 @@ public class VulkanCommandBuffer {
 			
 			vkCmdPipelineBarrier(internal, sourceStage, destinationStage, 0, null, null, barrier);
 		}		
+	}
+	
+	public void execute(VulkanCommandBuffer secondaryCommandBuffer) {
+		vkCmdExecuteCommands(internal, secondaryCommandBuffer.getInternal());
+	}
+
+	public void execute(VulkanCommandBuffer... secondaryCommandBuffers) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			PointerBuffer pointerBuffer = stack.callocPointer(secondaryCommandBuffers.length);
+			for (VulkanCommandBuffer buffer : secondaryCommandBuffers) {
+				pointerBuffer.put(buffer.getInternal());
+			}
+			pointerBuffer.clear();
+			vkCmdExecuteCommands(internal, pointerBuffer);
+		}
 	}
 	
 	
