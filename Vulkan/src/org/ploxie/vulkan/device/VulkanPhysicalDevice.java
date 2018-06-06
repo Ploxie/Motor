@@ -12,6 +12,7 @@ import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 import org.lwjgl.vulkan.VkSurfaceFormatKHR;
+import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.vulkan.VulkanInstance;
 import org.ploxie.vulkan.memory.VulkanMemoryHeap;
 import org.ploxie.vulkan.memory.VulkanMemoryType;
@@ -24,7 +25,6 @@ import org.ploxie.vulkan.surface.VulkanSurface;
 import org.ploxie.vulkan.surface.VulkanSurfaceCapabilities;
 import org.ploxie.vulkan.surface.VulkanSurfaceFormat;
 import org.ploxie.vulkan.surface.VulkanSurfacePresentMode;
-import org.ploxie.vulkan.utils.BufferUtils;
 import org.ploxie.vulkan.utils.VKUtil;
 
 import lombok.Getter;

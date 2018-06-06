@@ -509,6 +509,52 @@ public class Matrix4f implements Cloneable {
 		
         return this;
 	}
+	
+	public Matrix4f Rotation(Vector3f rotation)	{
+		Matrix4f rx = new Matrix4f();
+		Matrix4f ry = new Matrix4f();
+		Matrix4f rz = new Matrix4f();
+		
+		float x = (float)Math.toRadians(rotation.x());
+		float y = (float)Math.toRadians(rotation.y());
+		float z = (float)Math.toRadians(rotation.z());
+		
+		rz.values[0] = (float)Math.cos(z);		rz.values[1] = (float)Math.sin(z);		rz.values[2] = 0;					rz.values[3] = 0; 			
+		rz.values[4] = -(float)Math.sin(z);		rz.values[5] = (float)Math.cos(z);		rz.values[6] = 0;					rz.values[7] = 0; 			
+		rz.values[8] = 0;						rz.values[9] = 0;						rz.values[10] = 1;					rz.values[11] = 0; 			
+		rz.values[12] = 0;						rz.values[13] = 0;						rz.values[14] = 0;					rz.values[15] = 1;
+		
+		rx.values[0] = 1;		rx.values[1] = 0;						rx.values[2] = 0;									rx.values[3] = 0; 				
+		rx.values[4] = 0;		rx.values[5] = (float)Math.cos(x);		rx.values[6] = (float)Math.sin(x);					rx.values[7] = 0; 			
+		rx.values[8] = 0;		rx.values[9] = -(float)Math.sin(x);		rx.values[10] = (float)Math.cos(x); 				rx.values[11] = 0;			
+		rx.values[12] = 0;		rx.values[13] = 0;						rx.values[14] = 0;									rx.values[15] = 1;
+		
+		ry.values[0] = (float)Math.cos(y);		ry.values[1] = 0;			ry.values[2] = -(float)Math.sin(y);		ry.values[3] = 0; 				 
+		ry.values[4] = 0;						ry.values[5] = 1;			ry.values[6] = 0;						ry.values[7] = 0; 				
+		ry.values[8] = (float)Math.sin(y); 		ry.values[9] = 0; 			ry.values[10] = (float)Math.cos(y);		ry.values[11] = 0; 				
+		ry.values[12] = 0;						ry.values[13] = 0;			ry.values[14] = 0;						ry.values[15] = 1;
+	
+		values =  rz.multiply(ry.multiply(rx)).values;
+		
+		return this;
+	}
+	
+	public Matrix4f Translation(Vector3f translation)	{
+		values[0] = 1;							values[1] = 0;						values[2] = 0;						values[3] = 0;
+		values[4] = 0;							values[5] = 1;						values[6] = 0;						values[7] = 0;
+		values[8] = 0;							values[9] = 0;						values[10] = 1;						values[11] = 0;
+		values[12] = translation.x();			values[13] = translation.y();		values[14] = translation.z();		values[15] = 1;
+	
+		return this;
+	}
+	
+	public Matrix4f Scaling(Vector3f scaling){
+		values[0] = scaling.x();		values[1] = 0;			 		values[2] = 0;					values[3] = 0; 		
+		values[4] = 0;					values[5] = scaling.y();		values[6] = 0;					values[7] = 0;			
+		values[8] = 0;					values[9] = 0;					values[10] = scaling.z();		values[11] = 0; 		
+		values[12] = 0;					values[13] = 0;					values[14] = 0;					values[15] = 1;	
+		return this;
+	}
 
 	public void setScale(Vector2f scale) {
 		values[0] = scale.x;

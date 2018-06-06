@@ -23,7 +23,9 @@ import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.ploxie.opengl.utilities.BufferUtils;
+import org.ploxie.engine2.model.Mesh;
+import org.ploxie.engine2.model.Vertex;
+import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.opengl.utilities.OpenGLObject;
 
 public class VBO implements OpenGLObject{
@@ -43,6 +45,7 @@ public class VBO implements OpenGLObject{
 	}
 
 	private int vaoID;
+	private int vboID;
 	private int indexBufferID;
 	private Map<BufferType, VAO> buffers;
 	private int bufferIndex;
@@ -50,20 +53,47 @@ public class VBO implements OpenGLObject{
 
 	public VBO() {
 		vaoID = glGenVertexArrays();
+		vboID = glGenBuffers();
 		indexBufferID = glGenBuffers();
 		buffers = new HashMap<BufferType, VAO>();
 	}
 	
 	protected void finalize() throws Throwable{
-		System.out.println("ASD");
 		delete();
 	}
 		
 	public int getSize() {
 		return size;
 	}
+	
+	public void setData(Mesh mesh) {
+		size = mesh.getIndices().length;
+	
+		glBindVertexArray(vaoID);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vboID);
+		glBufferData(GL_ARRAY_BUFFER, BufferUtils.createFlippedBufferAOS(mesh.getVertices()), GL_STATIC_DRAW);
+		
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, BufferUtils.createIntBuffer(mesh.getIndices()), GL_STATIC_DRAW);
+		
+		if (mesh.isTangentSpace()){
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 3);
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 6);
+			glVertexAttribPointer(3, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 8);
+			glVertexAttribPointer(4, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 11);
+		}
+		else{
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Float.BYTES * 8, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, Float.BYTES * 8, Float.BYTES * 3);
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, Float.BYTES * 8, Float.BYTES * 6);
+		}
+		
+		glBindVertexArray(0);
+	}
 
-	public void setIndexBufferData(int[] data, int usage) {
+	/*public void setIndexBufferData(int[] data, int usage) {
 
 		size = data.length;
 
@@ -91,9 +121,9 @@ public class VBO implements OpenGLObject{
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-	}
+	}*/
 
-	public void setBufferData(BufferType type, ByteBuffer buffer, int size, int usage) {
+	/*public void setBufferData(BufferType type, ByteBuffer buffer, int size, int usage) {
 
 		VAO vao = buffers.get(type);
 		if (vao == null) {
@@ -110,12 +140,12 @@ public class VBO implements OpenGLObject{
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-	}
+	}*/
 
 	public void draw() {		
 		glBindVertexArray(vaoID);
 
-		for (VAO vao : buffers.values()) {
+		/*for (VAO vao : buffers.values()) {
 			glEnableVertexAttribArray(vao.index);
 		}
 
@@ -123,7 +153,24 @@ public class VBO implements OpenGLObject{
 
 		for (VAO vao : buffers.values()) {
 			glDisableVertexAttribArray(vao.index);
-		}
+		}*/
+		
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		/*if (hasTangentsBitangents){
+			glEnableVertexAttribArray(3);
+			glEnableVertexAttribArray(4);
+		}	*/	
+			glDrawElements(GL_TRIANGLES, size, GL_UNSIGNED_INT, 0);
+		
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		/*if (hasTangentsBitangents){
+			glDisableVertexAttribArray(3);
+			glDisableVertexAttribArray(4);
+		}*/
 
 		glBindVertexArray(0);
 	}

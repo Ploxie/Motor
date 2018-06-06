@@ -20,12 +20,20 @@ public class Vertex {
 	
 	public enum VertexLayout{
 		
-		POS_NORMAL_UV_TAN_BITAN,
-		POS_NORMAL,
-		POS_UV,
-		POS,
-		POS_NORMAL_UV,
-		POS2D;
+		POS_NORMAL_UV_TAN_BITAN(56),
+		POS_NORMAL(24),
+		POS_UV(20),
+		POS(12),
+		POS_NORMAL_UV(32),
+		POS2D(8);
+		
+		int stride;
+		VertexLayout(int stride){
+			this.stride = stride;
+		}
+		public int getStride() {
+			return stride;
+		}
 	}
 	
 	public Vertex(){	

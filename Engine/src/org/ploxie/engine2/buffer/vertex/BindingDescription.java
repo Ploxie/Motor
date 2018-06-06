@@ -1,12 +1,12 @@
-package org.ploxie.vulkan.buffer.vertex;
+package org.ploxie.engine2.buffer.vertex;
 
 import lombok.Data;
 
 @Data
 public class BindingDescription {
-
+	
 	private final int binding;
 	private final int stride;
 	private boolean instanced = false;
-	
+
 }

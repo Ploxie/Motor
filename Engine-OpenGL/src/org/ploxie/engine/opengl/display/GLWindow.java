@@ -27,6 +27,8 @@ public class GLWindow extends Window{
 		if(getHandle() == 0) {
 		    throw new RuntimeException("Failed to create window");
 		}
+		
+		
 				
 		GLFW.glfwMakeContextCurrent(getHandle());
 		GLFW.glfwSwapInterval(0);

@@ -15,6 +15,7 @@ import org.ploxie.vulkan.VulkanInstanceProperties;
 import org.ploxie.vulkan.device.VulkanLogicalDevice;
 import org.ploxie.vulkan.device.VulkanPhysicalDevice;
 import org.ploxie.vulkan.queue.VulkanDeviceQueueCreateInfo;
+import org.ploxie.vulkan.queue.VulkanQueue;
 import org.ploxie.vulkan.queue.VulkanQueueFamilyProperties;
 import org.ploxie.vulkan.queue.VulkanQueueFamilyPropertiesList;
 
@@ -29,6 +30,8 @@ public class VulkanContext extends EngineContext {
 	private static VulkanPhysicalDevice physicalDevice;
 	@Getter
 	private static VulkanLogicalDevice logicalDevice;
+	@Getter
+	private static VulkanQueue graphicsQueue;
 	
 	public static void initialize() {
 		EngineContext.initialize();
@@ -50,12 +53,15 @@ public class VulkanContext extends EngineContext {
 		
 		window = new VulkanWindow();
 		
-		
+		graphicsToolkit = new VulkanToolkit();
+		int graphicsFamilyIndex = physicalDevice.getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
+		graphicsQueue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);
 		
 	}
 
 	public static VulkanWindow getWindow() {
 		return (VulkanWindow) window;
 	}
+	
 
 }

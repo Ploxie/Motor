@@ -1,11 +1,11 @@
 package org.ploxie.vulkan.shader;
 
-import lombok.Builder;
-import lombok.Data;
+import org.ploxie.engine2.pipeline.shader.ShaderModules;
 
-@Data
+import lombok.Builder;
+
 @Builder
-public class VulkanShaderModules {
+public class VulkanShaderModules extends ShaderModules{
 
 	private VulkanShaderModule vertex;
 	private VulkanShaderModule fragment;	
@@ -19,6 +19,16 @@ public class VulkanShaderModules {
 			count++;
 		}
 		return count;
+	}
+
+	@Override
+	public VulkanShaderModule getVertex() {
+		return vertex;
+	}
+
+	@Override
+	public VulkanShaderModule getFragment() {
+		return fragment;
 	}
 	
 }

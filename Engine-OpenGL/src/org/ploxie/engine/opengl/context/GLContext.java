@@ -8,9 +8,7 @@ public class GLContext extends EngineContext{
 	
 	public static void initialize() {
 		EngineContext.initialize();
-		window = new GLWindow();
-		
-		GL.createCapabilities();
+		window = new GLWindow();		
 	}
 	
 	public static GLWindow getWindow() {

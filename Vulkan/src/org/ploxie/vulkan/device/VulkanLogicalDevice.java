@@ -49,6 +49,10 @@ import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.ploxie.engine.display.Window;
+import org.ploxie.engine2.buffer.vertex.AttributeDescription;
+import org.ploxie.engine2.buffer.vertex.BindingDescription;
+import org.ploxie.engine2.buffer.vertex.VertexInputInfo;
+import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.utils.math.FastMath;
 import org.ploxie.utils.math.vector.Vector2i;
 import org.ploxie.vulkan.VulkanInstance;
@@ -56,9 +60,6 @@ import org.ploxie.vulkan.buffer.VulkanBuffer;
 import org.ploxie.vulkan.buffer.VulkanBufferUsageFlag;
 import org.ploxie.vulkan.buffer.VulkanCommandBuffer;
 import org.ploxie.vulkan.buffer.VulkanFrameBuffer;
-import org.ploxie.vulkan.buffer.vertex.AttributeDescription;
-import org.ploxie.vulkan.buffer.vertex.BindingDescription;
-import org.ploxie.vulkan.buffer.vertex.VertexInputInfo;
 import org.ploxie.vulkan.command.VulkanCommandPool;
 import org.ploxie.vulkan.descriptor.VulkanDescriptorLayout;
 import org.ploxie.vulkan.descriptor.VulkanDescriptorPool;
@@ -90,7 +91,6 @@ import org.ploxie.vulkan.surface.VulkanSurfaceFormat;
 import org.ploxie.vulkan.surface.VulkanSurfacePresentMode;
 import org.ploxie.vulkan.swapchain.VulkanSwapChain;
 import org.ploxie.vulkan.synchronization.VulkanSemaphore;
-import org.ploxie.vulkan.utils.BufferUtils;
 import org.ploxie.vulkan.utils.VKUtil;
 import org.lwjgl.vulkan.VkPipelineDynamicStateCreateInfo;
 
@@ -378,7 +378,7 @@ public class VulkanLogicalDevice {
 				
 				for(int i = 0; i < attributeDescriptions.length;i++) {
 					AttributeDescription attributeDescription = attributeDescriptions[i];
-					int format = attributeDescription.getFormat();
+					int format = VKUtil.getFormat(attributeDescription.getFormat());
 					inputAttributeDescriptionsInternal
 					.get(i)
 					.location(attributeDescription.getLocation())
@@ -395,16 +395,16 @@ public class VulkanLogicalDevice {
 					.pVertexBindingDescriptions(bindingDescriptionInternal)
 					.pVertexAttributeDescriptions(inputAttributeDescriptionsInternal);
 			
-			int topology = properties.getTopology();
+			int topology = VKUtil.getTopology(properties.getTopology());
 			VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = VkPipelineInputAssemblyStateCreateInfo
 					.callocStack(stack)
 					.sType(VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO)
 					.topology(topology)
 					.primitiveRestartEnable(false);
 			
-			int polygonMode = properties.getPolygonDrawMode();
-			int frontFace = properties.getFrontFaceVertexWinding();
-			int cullMode = properties.getCullFaceSide();
+			int polygonMode = VKUtil.getPolygonDrawMode(properties.getPolygonDrawMode());
+			int frontFace = VKUtil.getFrontFaceVertexWinding(properties.getFrontFaceVertexWinding());
+			int cullMode = VKUtil.getCullMode(properties.getCullFaceSide());
 			
 			VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = VkPipelineRasterizationStateCreateInfo
 					.callocStack(stack)
@@ -634,7 +634,7 @@ public class VulkanLogicalDevice {
 		}
 	}
 	
-	public VulkanBuffer createBuffer(long size, boolean exclusive, VulkanBufferUsageFlag... usages) {
+	public VulkanBuffer createBuffer(int size, boolean exclusive, VulkanBufferUsageFlag... usages) {
 		try(MemoryStack stack = MemoryStack.stackPush()){
 			int usageFlags = 0;
 			for(VulkanBufferUsageFlag flag : usages) {
@@ -783,7 +783,7 @@ public class VulkanLogicalDevice {
 		}
 		return formats.get(0);
 	}
-	
+
 	private VkPipelineShaderStageCreateInfo.Buffer createShaderStages(MemoryStack stack, VulkanShaderModules shaderModules){
 		VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.callocStack(shaderModules.getShaderCount(), stack);
 		
@@ -799,6 +799,7 @@ public class VulkanLogicalDevice {
 		shaderStages.flip();		
 		return shaderStages;
 	}
+	
 	
 	private VkPipelineShaderStageCreateInfo getShaderStage(MemoryStack stack, VulkanShaderModule shaderModule, int stage) {
 		return VkPipelineShaderStageCreateInfo

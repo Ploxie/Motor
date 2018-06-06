@@ -9,7 +9,7 @@ public class VulkanBuffer {
 
 	private final VulkanLogicalDevice device;
 	private final long handle;
-	private final long size;
+	private final int size;
 	
 	@Override
 	protected void finalize() throws Throwable {

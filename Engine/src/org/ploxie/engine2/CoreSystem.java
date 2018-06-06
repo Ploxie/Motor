@@ -22,16 +22,12 @@ public class CoreSystem {
 
 	private GLFWErrorCallback errorCallback;
 
-	public CoreSystem() {
-		window = EngineContext.getWindow();
-		input = EngineContext.getInput();
-	}
-
 	public void initialize() {
 
 		GLFW.glfwSetErrorCallback(errorCallback = GLFWErrorCallback.createPrint(System.err));
 
-		
+		window = EngineContext.getWindow();
+		input = EngineContext.getInput();
 
 		window.create();
 		input.create(window.getHandle());

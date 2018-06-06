@@ -18,7 +18,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkApplicationInfo;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkInstanceCreateInfo;
-import org.ploxie.vulkan.utils.BufferUtils;
+import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.vulkan.utils.VKUtil;
 
 import lombok.Getter;
