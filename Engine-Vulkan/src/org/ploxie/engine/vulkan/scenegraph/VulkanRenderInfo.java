@@ -14,9 +14,9 @@ import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.ploxie.engine.vulkan.context.DescriptorPoolManager.DescriptorPoolType;
 import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine.vulkan.context.VulkanToolkit;
-import org.ploxie.engine.vulkan.pipeline.shader.UniformBuffer;
 import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.Pipeline;
+import org.ploxie.engine2.pipeline.UniformBuffer;
 import org.ploxie.engine2.scenegraph.RenderInfo;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.utils.math.matrix.Matrix4f;
@@ -55,7 +55,10 @@ public class VulkanRenderInfo extends RenderInfo {
 	private VulkanRect2D scissor;
 	private VulkanGraphicsPipeline graphicsPipeline;
 	private VulkanDescriptorSet descriptorSet;
+	private VulkanUniformBufferDescriptor uniformBufferDescriptor;
 			
+	private UniformBuffer uniformBuffer;
+	
 	public VulkanRenderInfo(Mesh mesh, VulkanGraphicsPipelineProperties pipeline) {
 		super(mesh, pipeline);
 		
@@ -78,19 +81,11 @@ public class VulkanRenderInfo extends RenderInfo {
 		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);		
 		descriptorSet = descriptorPool.allocateDescriptorSet(graphicsPipeline.getDescriptorSetLayouts()[0]);
 				
-		UniformBuffer uniformBuffer = new UniformBuffer();
-		
-		VulkanUniformBufferDescriptor uniformBufferDescriptor = logicalDevice.createUniformBuffer(uniformBuffer.getSize());		
-		
+		uniformBuffer = pipeline.getUniformBuffer();
 		uniformBuffer.getMatrix().setScale(new Vector3f(0.5f, 0.5f, 1.0f));
 		
-		logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), uniformBuffer.getSize(), 0, 0, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-		
-		//updateUniformBuffer();
-		
-		ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(uniformBuffer.getSize());
-		uniformBuffer.getMatrix().fillBuffer(matrixBuffer);
-		logicalDevice.mapUniformBuffer(uniformBufferDescriptor, matrixBuffer);		
+		uniformBufferDescriptor = logicalDevice.createUniformBuffer(uniformBuffer.getSize());	
+		logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), uniformBuffer.getSize(), 0, 0, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);				
 	}
 	
 	public VulkanCommandBuffer record() {
@@ -104,12 +99,16 @@ public class VulkanRenderInfo extends RenderInfo {
 		commandBuffer.drawIndexed(indexBuffer.getSize(), 1, 0, 0, 0);			
 		commandBuffer.end();
 		
+		updateUniformBuffers();
+		
 		return commandBuffer;
 	}
 	
 	private void updateUniformBuffers() {
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
 		
+		ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(uniformBuffer.getSize());
+		logicalDevice.mapUniformBuffer(uniformBufferDescriptor, uniformBuffer.fillBuffer(matrixBuffer));		
 		
 	}
 	

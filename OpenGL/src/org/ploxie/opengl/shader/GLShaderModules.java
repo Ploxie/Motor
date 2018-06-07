@@ -13,6 +13,7 @@ import static org.lwjgl.opengl.GL20.glValidateProgram;
 import org.ploxie.engine2.pipeline.shader.ShaderModules;
 
 import lombok.Builder;
+import lombok.Getter;
 
 @Builder
 public class GLShaderModules extends ShaderModules{
@@ -22,6 +23,7 @@ public class GLShaderModules extends ShaderModules{
 	private GLShaderModule vertexShader;
 	private GLShaderModule fragmentShader;
 	
+	@Getter
 	private int id;
 	
 	public void bind() {

@@ -52,7 +52,6 @@ import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.ploxie.engine.display.Window;
-import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine2.buffer.vertex.AttributeDescription;
 import org.ploxie.engine2.buffer.vertex.BindingDescription;
 import org.ploxie.engine2.buffer.vertex.VertexInputInfo;
@@ -668,7 +667,7 @@ public class VulkanLogicalDevice {
 			VkMemoryRequirements memoryRequirements = VkMemoryRequirements.callocStack(stack);
 			vkGetBufferMemoryRequirements(internal,  buffer.getHandle(), memoryRequirements);
 			
-			System.out.println(memoryRequirements.size() + ": " + ": " + memoryRequirements.alignment() +":" + memoryRequirements.memoryTypeBits());
+			//System.out.println(memoryRequirements.size() + ": " + ": " + memoryRequirements.alignment() +":" + memoryRequirements.memoryTypeBits());
 			
 			VulkanPhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getDeviceMemoryProperties();
 			VulkanMemoryType memoryType = memoryProperties.getType(flags);
@@ -699,7 +698,7 @@ public class VulkanLogicalDevice {
 			VkMemoryRequirements memoryRequirements = VkMemoryRequirements.callocStack(stack);
 			vkGetImageMemoryRequirements(internal, image.getHandle(), memoryRequirements);
 			
-			System.out.println(memoryRequirements.size() + ": " + ": " + memoryRequirements.alignment() +":" + memoryRequirements.memoryTypeBits());
+			//System.out.println(memoryRequirements.size() + ": " + ": " + memoryRequirements.alignment() +":" + memoryRequirements.memoryTypeBits());
 			
 			VulkanPhysicalDeviceMemoryProperties memoryProperties = physicalDevice.getDeviceMemoryProperties();
 			VulkanMemoryType memoryType = memoryProperties.getType(flags);

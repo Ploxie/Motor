@@ -15,12 +15,12 @@ public class FileUtils {
 	 * @return
 	 * @throws FileNotFoundException 
 	 */
-	public static InputStream getFile(String path) throws FileNotFoundException {
+	public static InputStream getFileAsInputStream(String path) throws FileNotFoundException {
+		return new FileInputStream(getFile(path));
+	}
 	
-		//InputStream s = new FileInputStream(new File(System.getProperty("user.dir")+"\\../"+path));
-		return new FileInputStream(new File(System.getProperty("user.dir")+"\\../"+path));
-		//return new FileInputStream(new File(System.getProperty("user.dir")+"\.."+))
-		//return FileUtils.class.getClassLoader().getResourceAsStream(path);
+	public static File getFile(String path) {
+		return new File(System.getProperty("user.dir")+"\\../"+path);
 	}
 
 	/**
@@ -31,7 +31,7 @@ public class FileUtils {
 	 * @throws IOException
 	 */
 	public static byte[] getFileToBytes(String path) throws IOException {
-		try (InputStream is = getFile(path)) {
+		try (InputStream is = getFileAsInputStream(path)) {
 			return ByteUtils.getBytes(is);
 		}
 	}

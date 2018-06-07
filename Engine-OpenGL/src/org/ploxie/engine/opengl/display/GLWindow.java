@@ -10,7 +10,7 @@ import org.ploxie.engine2.display.Window;
 public class GLWindow extends Window{
 
 	public GLWindow() {
-		super(GLContext.getConfiguration().getDisplayTitle(),
+		super(GLContext.getConfiguration().getDisplayTitle()+ " (OpenGL)",
 			  GLContext.getConfiguration().getWindowWidth(),
 			  GLContext.getConfiguration().getWindowHeight());		
 	}

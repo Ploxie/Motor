@@ -28,7 +28,7 @@ import org.ploxie.engine2.model.Vertex;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.opengl.utilities.OpenGLObject;
 
-public class VBO implements OpenGLObject{
+public class VertexBufferObject implements OpenGLObject{
 
 	public enum BufferType {
 		VERTEX, UV, COLOR
@@ -51,7 +51,7 @@ public class VBO implements OpenGLObject{
 	private int bufferIndex;
 	private int size;
 
-	public VBO() {
+	public VertexBufferObject() {
 		vaoID = glGenVertexArrays();
 		vboID = glGenBuffers();
 		indexBufferID = glGenBuffers();
@@ -76,8 +76,39 @@ public class VBO implements OpenGLObject{
 		
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferID);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, BufferUtils.createIntBuffer(mesh.getIndices()), GL_STATIC_DRAW);
+				
 		
-		if (mesh.isTangentSpace()){
+		switch(mesh.getVertexLayout()) {
+		case POS:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			break;
+		case POS2D:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			break;
+		case POS_NORMAL:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 3);
+			break;
+		case POS_NORMAL_UV:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 3);
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 6);
+			break;
+		case POS_NORMAL_UV_TAN_BITAN:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 3);
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 6);
+			glVertexAttribPointer(3, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 8);
+			glVertexAttribPointer(4, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 11);
+			break;
+		case POS_UV:
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, Float.BYTES * 8, 0);
+			glVertexAttribPointer(1, 2, GL_FLOAT, false, Float.BYTES * 8, Float.BYTES * 6);
+			break;
+		
+		}
+		
+		/*if (mesh.isTangentSpace()){
 			glVertexAttribPointer(0, 3, GL_FLOAT, false, Vertex.BYTES, 0);
 			glVertexAttribPointer(1, 3, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 3);
 			glVertexAttribPointer(2, 2, GL_FLOAT, false, Vertex.BYTES, Float.BYTES * 6);
@@ -88,7 +119,7 @@ public class VBO implements OpenGLObject{
 			glVertexAttribPointer(0, 3, GL_FLOAT, false, Float.BYTES * 8, 0);
 			glVertexAttribPointer(1, 3, GL_FLOAT, false, Float.BYTES * 8, Float.BYTES * 3);
 			glVertexAttribPointer(2, 2, GL_FLOAT, false, Float.BYTES * 8, Float.BYTES * 6);
-		}
+		}*/
 		
 		glBindVertexArray(0);
 	}

@@ -15,6 +15,7 @@ import org.ploxie.engine.vulkan.display.VulkanWindow;
 import org.ploxie.engine.vulkan.scenegraph.VulkanRenderInfo;
 import org.ploxie.engine2.RenderEngine;
 import org.ploxie.engine2.model.Mesh;
+import org.ploxie.engine2.pipeline.UniformBuffer;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.engine2.util.MeshGenerator;
 import org.ploxie.utils.Color;
@@ -49,6 +50,7 @@ public class VulkanRenderEngine extends RenderEngine {
 	@Override
 	public void initialize() {
 		super.initialize();
+				
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
 
 		window = VulkanContext.getWindow();
@@ -58,8 +60,8 @@ public class VulkanRenderEngine extends RenderEngine {
 		ByteBuffer triangleVertCode = null;
 		ByteBuffer triangleFragCode = null;
 		try {
-			triangleVertCode = BufferUtils.wrap(FileUtils.getFileToBytes("res/vert.spv"));
-			triangleFragCode = BufferUtils.wrap(FileUtils.getFileToBytes("res/frag.spv"));
+			triangleVertCode = BufferUtils.wrap(FileUtils.getFileToBytes("res/shader.vert.spv"));
+			triangleFragCode = BufferUtils.wrap(FileUtils.getFileToBytes("res/shader.frag.spv"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
@@ -69,7 +71,7 @@ public class VulkanRenderEngine extends RenderEngine {
 		
 		VulkanShaderModules shaderModules = VulkanShaderModules.builder().vertex(triangleVertShader).fragment(triangleFragShader).build();	
 		VulkanGraphicsPipelineProperties pipeline = new VulkanGraphicsPipelineProperties(shaderModules);
-		//pipeline.setUniformBuffer(new VulkanCameraUniformBuffer(0));
+		pipeline.setUniformBuffer(new UniformBuffer());
 		
 		
 

@@ -62,7 +62,7 @@ public class VulkanWindow extends Window {
 	
 
 	public VulkanWindow() {
-		super(VulkanContext.getConfiguration().getDisplayTitle(),
+		super(VulkanContext.getConfiguration().getDisplayTitle() + " (Vulkan)",
 				VulkanContext.getConfiguration().getWindowWidth(),
 				VulkanContext.getConfiguration().getWindowHeight());
 	}

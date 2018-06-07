@@ -9,8 +9,8 @@ import static org.lwjgl.opengl.GL15.GL_DYNAMIC_DRAW;
 import org.ploxie.engine.model.Model;
 import org.ploxie.engine.model.materials.TextMaterial;
 import org.ploxie.engine.utils.BufferUtils;
-import org.ploxie.opengl.buffer.VBO;
-import org.ploxie.opengl.buffer.VBO.BufferType;
+import org.ploxie.opengl.buffer.VertexBufferObject;
+import org.ploxie.opengl.buffer.VertexBufferObject.BufferType;
 import org.ploxie.utils.VertexStream;
 import org.ploxie.utils.math.vector.Vector2f;
 import org.ploxie.utils.math.vector.Vector3f;
@@ -57,7 +57,7 @@ public class TextMesh extends Model{
 
 		int usage = drawStatic ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 		
-		vbo = new VBO();
+		vbo = new VertexBufferObject();
 		vbo.setIndexBufferData(indices.stream().mapToInt(i -> i).toArray(), usage);
 		vbo.setBufferData(BufferType.VERTEX, BufferUtils.createFlippedBuffer(vertexStream.getBuffer()), 3, usage);
 		vbo.setBufferData(BufferType.UV, BufferUtils.createFlippedBuffer(uvStream.getBuffer()), 2, usage);

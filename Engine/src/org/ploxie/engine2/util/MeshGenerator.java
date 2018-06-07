@@ -70,7 +70,9 @@ public class MeshGenerator {
 		vertices[22] = new Vertex(new Vector3f(-1,-1, 1), new Vector2f(1,0));
 		vertices[23] = new Vertex(new Vector3f(-1,-1,-1), new Vector2f(1,1));
 		
-		return new Mesh(vertices, indices);
+		Mesh mesh = new Mesh(vertices, indices);
+		mesh.setVertexLayout(VertexLayout.POS_UV);
+		return mesh;
 	}
 	
 	public static Vector2f[] TerrainChunkMesh(){

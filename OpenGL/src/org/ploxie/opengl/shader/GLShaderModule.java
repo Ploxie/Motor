@@ -58,7 +58,7 @@ public class GLShaderModule extends ShaderModule{
 		BufferedReader shaderReader = null;	
 
 		try {
-			is = FileUtils.getFile(fileName);
+			is = FileUtils.getFileAsInputStream(fileName);
 			InputStreamReader sr = new InputStreamReader(is, "UTF-8");
 			shaderReader = new BufferedReader(sr);
 			String line;
