@@ -32,6 +32,8 @@ public class VulkanContext extends EngineContext {
 	private static VulkanLogicalDevice logicalDevice;
 	@Getter
 	private static VulkanQueue graphicsQueue;
+	@Getter
+	private static DescriptorPoolManager descriptorPoolManager;
 	
 	public static void initialize() {
 		EngineContext.initialize();
@@ -56,6 +58,8 @@ public class VulkanContext extends EngineContext {
 		graphicsToolkit = new VulkanToolkit();
 		int graphicsFamilyIndex = physicalDevice.getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
 		graphicsQueue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);
+		
+		descriptorPoolManager = new DescriptorPoolManager();
 		
 	}
 

@@ -11,9 +11,10 @@ import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDescriptorBufferInfo;
 import org.lwjgl.vulkan.VkWriteDescriptorSet;
+import org.ploxie.engine.vulkan.context.DescriptorPoolManager.DescriptorPoolType;
 import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine.vulkan.context.VulkanToolkit;
-import org.ploxie.engine.vulkan.pipeline.shader.VulkanCameraUniformBuffer;
+import org.ploxie.engine.vulkan.pipeline.shader.UniformBuffer;
 import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.Pipeline;
 import org.ploxie.engine2.scenegraph.RenderInfo;
@@ -54,16 +55,7 @@ public class VulkanRenderInfo extends RenderInfo {
 	private VulkanRect2D scissor;
 	private VulkanGraphicsPipeline graphicsPipeline;
 	private VulkanDescriptorSet descriptorSet;
-	private VulkanUniformBufferDescriptor uniformBufferDescriptor;
-	
-	private VulkanCameraUniformBuffer uniBuffer;
-	
-	@Getter
-	@Setter
-	private Vector3f position = new Vector3f();
-	
-	private Matrix4f camera = new Matrix4f();
-
+			
 	public VulkanRenderInfo(Mesh mesh, VulkanGraphicsPipelineProperties pipeline) {
 		super(mesh, pipeline);
 		
@@ -71,6 +63,7 @@ public class VulkanRenderInfo extends RenderInfo {
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
 		VulkanCommandPool commandPool = logicalDevice.getCommandPool(graphicsFamilyIndex);
 		VulkanQueue queue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);		
+		VulkanDescriptorPool descriptorPool = VulkanContext.getDescriptorPoolManager().getDescriptorPool(DescriptorPoolType.PRIMARY);
 		
 		vertexBuffer = VulkanBufferUtils.createDeviceLocalBuffer(logicalDevice, BufferUtils.createByteBuffer(mesh.getVertices(), mesh.getVertexLayout()), queue, commandPool, VulkanBufferUsageFlag.VERTEX);
 		indexBuffer = VulkanBufferUtils.createDeviceLocalBuffer(logicalDevice, BufferUtils.createByteBuffer(mesh.getIndices()), queue, commandPool, VulkanBufferUsageFlag.INDEX);		
@@ -82,14 +75,22 @@ public class VulkanRenderInfo extends RenderInfo {
 		pipeline.setVertexInputInfo(mesh.getVertexInputInfo());
 		graphicsPipeline = logicalDevice.createGraphicsPipeline(renderPass, pipeline);		
 				
-		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);						
+		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);		
+		descriptorSet = descriptorPool.allocateDescriptorSet(graphicsPipeline.getDescriptorSetLayouts()[0]);
+				
+		UniformBuffer uniformBuffer = new UniformBuffer();
 		
-		uniBuffer = new VulkanCameraUniformBuffer(0, graphicsPipeline.getDescriptorSetLayouts()[0]);		
-		camera.setScale(new Vector3f(0.5f, 0.5f, 1.0f));		
-		uniBuffer.setMVP(camera);
+		VulkanUniformBufferDescriptor uniformBufferDescriptor = logicalDevice.createUniformBuffer(uniformBuffer.getSize());		
 		
-		uniBuffer.updateUniform();
+		uniformBuffer.getMatrix().setScale(new Vector3f(0.5f, 0.5f, 1.0f));
+		
+		logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), uniformBuffer.getSize(), 0, 0, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		
 		//updateUniformBuffer();
+		
+		ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(uniformBuffer.getSize());
+		uniformBuffer.getMatrix().fillBuffer(matrixBuffer);
+		logicalDevice.mapUniformBuffer(uniformBufferDescriptor, matrixBuffer);		
 	}
 	
 	public VulkanCommandBuffer record() {
@@ -99,12 +100,17 @@ public class VulkanRenderInfo extends RenderInfo {
 		commandBuffer.bindPipeline(graphicsPipeline);		
 		commandBuffer.bindVertexBuffers(vertexBuffer);
 		commandBuffer.bindIndexBuffer(indexBuffer, VK_FORMAT_R32_UINT);			
-		//commandBuffer.bindDescriptorSets(layout, descriptorSets);(uniBuffer.getDescriptorLayout(), uniBuffer.getDescriptorSet());
-		commandBuffer.bindDescriptorSets(graphicsPipeline.getLayout(), uniBuffer.getDescriptorSet());				
+		commandBuffer.bindDescriptorSets(graphicsPipeline.getLayout(), descriptorSet);				
 		commandBuffer.drawIndexed(indexBuffer.getSize(), 1, 0, 0, 0);			
 		commandBuffer.end();
 		
 		return commandBuffer;
+	}
+	
+	private void updateUniformBuffers() {
+		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
+		
+		
 	}
 	
 	

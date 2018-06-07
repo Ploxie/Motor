@@ -9,7 +9,7 @@ import lombok.Getter;
 public class RenderInfo {
 
 	private Mesh mesh;
-	private Pipeline pipeline;
+	protected Pipeline pipeline;
 
 	public RenderInfo(Mesh mesh, Pipeline pipeline) {
 		this.mesh = mesh;

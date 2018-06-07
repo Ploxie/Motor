@@ -7,6 +7,7 @@ import org.ploxie.engine2.pipeline.data.PolygonDrawMode;
 import org.ploxie.engine2.pipeline.data.PrimitiveTopology;
 import org.ploxie.engine2.pipeline.shader.ShaderModule;
 import org.ploxie.engine2.pipeline.shader.ShaderModules;
+import org.ploxie.engine2.pipeline.shader.ShaderUniformBuffer;
 
 import lombok.Data;
 

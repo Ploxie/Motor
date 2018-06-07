@@ -20,21 +20,26 @@ import org.ploxie.vulkan.memory.VulkanMemoryAllocation;
 import org.ploxie.vulkan.utils.VKUtil;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public abstract class VulkanShaderUniformBuffer extends ShaderUniformBuffer{
 
 	@Getter
 	private VulkanDescriptorSet descriptorSet;
-	private VulkanUniformBufferDescriptor descriptor;
+	private VulkanDescriptorPool descriptorPool;
+	private VulkanUniformBufferDescriptor uniformBuffer;
 	private int totalSize;
 	
 	@Getter
+	@Setter
 	protected VulkanDescriptorLayout descriptorLayout;
 	
-	public VulkanShaderUniformBuffer(int binding, VulkanDescriptorLayout descriptorLayout, UniformBufferType... types) {
+	private boolean created;
+	
+	public VulkanShaderUniformBuffer(int binding, UniformBufferType... types) {
 		super(binding, types);
-		this.descriptorLayout = descriptorLayout;
 		
+				
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
 		
 		int uniforms = 1;
@@ -44,17 +49,23 @@ public abstract class VulkanShaderUniformBuffer extends ShaderUniformBuffer{
 			if(type == UniformBufferType.MATRIX4) {
 				uniforms++;
 			}
-		}
+		}	
 		
-		VulkanDescriptorPool descriptorPool = logicalDevice.createDescriptorPool(uniforms,samplers);
+		this.descriptorPool = logicalDevice.createDescriptorPool(uniforms,samplers);
+		
+	}
+	
+	private void create() {		
+		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
+		
 		this.descriptorSet = descriptorPool.allocateDescriptorSet(descriptorLayout);
 		
-		this.descriptor = logicalDevice.createUniformBuffer(totalSize);
+		this.uniformBuffer = logicalDevice.createUniformBuffer(totalSize);
 		
 		try(MemoryStack stack = MemoryStack.stackPush()){
 			VkDescriptorBufferInfo.Buffer bufferInfo = VkDescriptorBufferInfo
 				.callocStack(1, stack)
-				.buffer(descriptor.getBuffer().getHandle())
+				.buffer(uniformBuffer.getBuffer().getHandle())
 				.offset(0)
 				.range(totalSize);
 	
@@ -76,8 +87,13 @@ public abstract class VulkanShaderUniformBuffer extends ShaderUniformBuffer{
 	protected abstract void fillData(ByteBuffer buffer);
 	
 	public void updateUniform() {
+		if(!created) {
+			create();
+			created = true;
+		}
+		
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
-		VulkanMemoryAllocation memoryAllocation = descriptor.getMemoryAllocation();
+		VulkanMemoryAllocation memoryAllocation = uniformBuffer.getMemoryAllocation();
 		
 		PointerBuffer pData = MemoryUtil.memAllocPointer(1);
 		int err = VK10.vkMapMemory(logicalDevice.getInternal(), memoryAllocation.getHandle(), 0, totalSize, 0, pData);

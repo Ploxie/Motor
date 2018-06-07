@@ -12,12 +12,14 @@ import java.util.Map;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkAttachmentDescription;
 import org.lwjgl.vulkan.VkAttachmentReference;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkCommandBufferAllocateInfo;
 import org.lwjgl.vulkan.VkCommandPoolCreateInfo;
+import org.lwjgl.vulkan.VkDescriptorBufferInfo;
 import org.lwjgl.vulkan.VkDescriptorPoolCreateInfo;
 import org.lwjgl.vulkan.VkDescriptorPoolSize;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
@@ -48,7 +50,9 @@ import org.lwjgl.vulkan.VkSubpassDescription;
 import org.lwjgl.vulkan.VkSwapchainCreateInfoKHR;
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
 import org.lwjgl.vulkan.VkVertexInputBindingDescription;
+import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.ploxie.engine.display.Window;
+import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine2.buffer.vertex.AttributeDescription;
 import org.ploxie.engine2.buffer.vertex.BindingDescription;
 import org.ploxie.engine2.buffer.vertex.VertexInputInfo;
@@ -63,6 +67,7 @@ import org.ploxie.vulkan.buffer.VulkanFrameBuffer;
 import org.ploxie.vulkan.command.VulkanCommandPool;
 import org.ploxie.vulkan.descriptor.VulkanDescriptorLayout;
 import org.ploxie.vulkan.descriptor.VulkanDescriptorPool;
+import org.ploxie.vulkan.descriptor.VulkanDescriptorSet;
 import org.ploxie.vulkan.descriptor.VulkanUniformBufferDescriptor;
 import org.ploxie.vulkan.image.VulkanImage;
 import org.ploxie.vulkan.image.VulkanImageAspectMask;
@@ -355,7 +360,7 @@ public class VulkanLogicalDevice {
 			return new VulkanRenderPass(renderPassHandleBuffer.get(0), subPasses, this);			
 		}		
 	}
-	
+		
 	public VulkanGraphicsPipeline createGraphicsPipeline(VulkanRenderPass renderPass, VulkanGraphicsPipelineProperties properties) {		
 		try(MemoryStack stack = MemoryStack.stackPush()){
 			VkVertexInputBindingDescription.Buffer bindingDescriptionInternal;
@@ -897,6 +902,46 @@ public class VulkanLogicalDevice {
 		VulkanBuffer buffer = createBuffer(uniformBufferSize, true, VulkanBufferUsageFlag.UNIFORM);
 		VulkanMemoryAllocation memoryAllocation = allocateMemory(buffer, VulkanMemoryPropertyFlag.HOST_VISIBLE, VulkanMemoryPropertyFlag.HOST_COHERENT);
 		return new VulkanUniformBufferDescriptor(memoryAllocation, buffer, 0, uniformBufferSize);
+	}
+	
+	public void updateDescriptorSet(VulkanDescriptorSet descriptorSet, long buffer, long range, long offset, int binding, int usage) {
+		try(MemoryStack stack = MemoryStack.stackPush()){
+			VkDescriptorBufferInfo.Buffer bufferInfo = VkDescriptorBufferInfo
+				.callocStack(1, stack)
+				.buffer(buffer)
+				.offset(offset)
+				.range(range);
+	
+			VkWriteDescriptorSet.Buffer descriptorWrite = VkWriteDescriptorSet.callocStack(1, stack);
+			descriptorWrite.get(0)
+				.sType(VK10.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET)
+				.dstSet(descriptorSet.getHandle())
+				.dstBinding(binding)
+				.dstArrayElement(0)
+				.descriptorType(usage)
+				.pBufferInfo(bufferInfo)
+				.pImageInfo(null)
+				.pTexelBufferView(null);
+	
+			vkUpdateDescriptorSets(getInternal(), descriptorWrite, null);			
+		}
+	}
+	
+	public void mapUniformBuffer(VulkanUniformBufferDescriptor descriptor, ByteBuffer buffer) {
+		VulkanMemoryAllocation memoryAllocation = descriptor.getMemoryAllocation();
+		
+		PointerBuffer pData = MemoryUtil.memAllocPointer(1);
+		int err = vkMapMemory(getInternal(), memoryAllocation.getHandle(), 0, descriptor.getRange(), 0, pData);
+		long data = pData.get(0);
+		MemoryUtil.memFree(pData);		
+
+		if (err != VK_SUCCESS) {
+			throw new AssertionError("Failed to map UBO memory: " + VKUtil.translateVulkanResult(err));
+		}
+		
+		memCopy(memAddress(buffer), data, buffer.remaining());
+		
+		vkUnmapMemory(getInternal(), memoryAllocation.getHandle());
 	}
 
 	public void createImageViewsForSwapChain(VulkanSwapChain swapChain) {

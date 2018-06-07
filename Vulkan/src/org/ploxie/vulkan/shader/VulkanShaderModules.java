@@ -9,7 +9,7 @@ public class VulkanShaderModules extends ShaderModules{
 
 	private VulkanShaderModule vertex;
 	private VulkanShaderModule fragment;	
-
+	
 	public int getShaderCount() {
 		int count = 0;
 		if (vertex != null) {
@@ -30,5 +30,7 @@ public class VulkanShaderModules extends ShaderModules{
 	public VulkanShaderModule getFragment() {
 		return fragment;
 	}
+	
+	
 	
 }

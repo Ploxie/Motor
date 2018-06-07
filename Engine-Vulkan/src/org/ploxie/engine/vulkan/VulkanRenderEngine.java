@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
+import org.ploxie.engine.vulkan.context.DescriptorPoolManager.DescriptorPoolType;
 import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine.vulkan.display.VulkanWindow;
 import org.ploxie.engine.vulkan.scenegraph.VulkanRenderInfo;
@@ -22,6 +23,7 @@ import org.ploxie.utils.math.vector.Vector3f;
 import org.ploxie.vulkan.buffer.VulkanCommandBuffer;
 import org.ploxie.vulkan.command.VulkanCommandPool;
 import org.ploxie.vulkan.command.VulkanSubmitInfo;
+import org.ploxie.vulkan.descriptor.VulkanDescriptorPool;
 import org.ploxie.vulkan.device.VulkanLogicalDevice;
 import org.ploxie.vulkan.math.VulkanExtent2D;
 import org.ploxie.vulkan.math.VulkanOffset2D;
@@ -48,6 +50,8 @@ public class VulkanRenderEngine extends RenderEngine {
 	public void initialize() {
 		super.initialize();
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
+
+		window = VulkanContext.getWindow();
 		
 		Mesh mesh = MeshGenerator.NDCQuad2D();
 		
@@ -63,29 +67,33 @@ public class VulkanRenderEngine extends RenderEngine {
 		VulkanShaderModule triangleVertShader = logicalDevice.loadShader(triangleVertCode);
 		VulkanShaderModule triangleFragShader = logicalDevice.loadShader(triangleFragCode);
 		
-		VulkanShaderModules shaderModules = VulkanShaderModules.builder().vertex(triangleVertShader).fragment(triangleFragShader).build();		
+		VulkanShaderModules shaderModules = VulkanShaderModules.builder().vertex(triangleVertShader).fragment(triangleFragShader).build();	
 		VulkanGraphicsPipelineProperties pipeline = new VulkanGraphicsPipelineProperties(shaderModules);
+		//pipeline.setUniformBuffer(new VulkanCameraUniformBuffer(0));
 		
-		object = new TestGameObject(new VulkanRenderInfo(mesh, pipeline));		
 		
-		window = VulkanContext.getWindow();
 
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
-		graphicsQueue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);
 		
 		IntBuffer pWaitDstStageMask = memAllocInt(1);
 		pWaitDstStageMask.put(0, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 				
+		graphicsQueue = VulkanContext.getGraphicsQueue();
+		
 		submitInfo = new VulkanSubmitInfo();
 		submitInfo.setWaitDstStageMask(pWaitDstStageMask);				
 		
 		renderPass = logicalDevice.createRenderPass(window.getSwapchain().getImageFormat().getColorFormat(), VK_FORMAT_D32_SFLOAT);
 		renderArea = new VulkanRect2D(new VulkanOffset2D(0,0), window.getExtent());
 		
-		VulkanCommandPool pool = logicalDevice.getCommandPool(graphicsFamilyIndex);
+		VulkanCommandPool commandPool = logicalDevice.getCommandPool(graphicsFamilyIndex);
+		VulkanDescriptorPool descriptorPool = logicalDevice.createDescriptorPool(1, 1);
 			
-		primaryCommandBuffer = logicalDevice.createCommandBuffer(pool, true);	
+		VulkanContext.getDescriptorPoolManager().addDescriptorPool(DescriptorPoolType.PRIMARY, descriptorPool);
 		
+		primaryCommandBuffer = logicalDevice.createCommandBuffer(commandPool, true);	
+		
+		object = new TestGameObject(new VulkanRenderInfo(mesh, pipeline));		
 		//object.setPosition(new Vector3f(0.5f, 0, 0));
 	}	
 	
@@ -94,7 +102,7 @@ public class VulkanRenderEngine extends RenderEngine {
 		
 		primaryCommandBuffer.reset();
 		primaryCommandBuffer.begin();			
-		primaryCommandBuffer.beginRenderPass(renderPass, window.getCurrentFrameBuffer(), false, renderArea, new Color(0.47f, 0.47f, 0.47f, 1.0f));		
+		primaryCommandBuffer.beginRenderPass(renderPass, window.getCurrentFrameBuffer(), false, renderArea, new Color(0.5f, 0.5f, 0.55f, 1.0f));		
 		primaryCommandBuffer.execute(object.record());
 		primaryCommandBuffer.endRenderPass();	
 		primaryCommandBuffer.end();
