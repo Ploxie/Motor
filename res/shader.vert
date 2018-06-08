@@ -7,6 +7,6 @@ layout(location = 1) in vec2 inUV;
 layout(binding = 0) uniform Camera{    mat4 mvp;} camera;layout(binding = 1) uniform Camera2{   	vec3 vek;} camera2;
 
  void main() {
-    gl_Position = camera.mvp * vec4(inPosition + camera2.vek, 1);
+    gl_Position = camera.mvp * vec4(inPosition + camera2.vek, 1);
     fragColor = vec3(inUV, 0);
 }

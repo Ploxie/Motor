@@ -6,6 +6,8 @@ import org.lwjgl.opengl.GL20;
 import org.ploxie.engine.opengl.scenegraph.GLRenderInfo;
 import org.ploxie.engine2.RenderEngine;
 import org.ploxie.engine2.model.Mesh;
+import org.ploxie.engine2.pipeline.uniformbuffers.CameraBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.TestBuffer;
 import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.util.MeshGenerator;
 import org.ploxie.opengl.pipeline.GLPipeline;
@@ -29,7 +31,8 @@ public class GLRenderEngine extends RenderEngine{
 		GLShaderModules shaderModules = GLShaderModules.builder().vertexShader(vertexShader).fragmentShader(fragmentShader).build().init();
 		
 		GLPipeline pipeline = new GLPipeline(shaderModules);
-		pipeline.setUniformBuffer(new UniformBuffer());
+		pipeline.getUniformBuffers().add(new CameraBuffer());
+		pipeline.getUniformBuffers().add(new TestBuffer());
 		
 		object = new TestGameObject(new GLRenderInfo(mesh, pipeline));
 		
