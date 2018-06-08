@@ -4,6 +4,8 @@ import static org.lwjgl.vulkan.VK10.VK_FORMAT_D32_SFLOAT;
 import static org.lwjgl.vulkan.VK10.VK_FORMAT_R32_UINT;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -16,7 +18,7 @@ import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine.vulkan.context.VulkanToolkit;
 import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.Pipeline;
-import org.ploxie.engine2.pipeline.UniformBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.scenegraph.RenderInfo;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.utils.math.matrix.Matrix4f;
@@ -55,12 +57,12 @@ public class VulkanRenderInfo extends RenderInfo {
 	private VulkanRect2D scissor;
 	private VulkanGraphicsPipeline graphicsPipeline;
 	private VulkanDescriptorSet descriptorSet;
-	private VulkanUniformBufferDescriptor uniformBufferDescriptor;
-			
-	private UniformBuffer uniformBuffer;
+	private List<VulkanUniformBufferDescriptor> uniformBufferDescriptors;
+				
 	
 	public VulkanRenderInfo(Mesh mesh, VulkanGraphicsPipelineProperties pipeline) {
 		super(mesh, pipeline);
+		pipeline.setVertexInputInfo(mesh.getVertexInputInfo());
 		
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
@@ -74,18 +76,21 @@ public class VulkanRenderInfo extends RenderInfo {
 		renderPass = logicalDevice.createRenderPass(VulkanContext.getWindow().getSwapchain().getImageFormat().getColorFormat(), VK_FORMAT_D32_SFLOAT);
 		viewport = VulkanViewportProperties.builder().dimensions(VulkanContext.getWindow().getExtent()).build();
 		scissor = new VulkanRect2D(new VulkanOffset2D(0,0), VulkanContext.getWindow().getExtent());		
-		
-		pipeline.setVertexInputInfo(mesh.getVertexInputInfo());
+				
 		graphicsPipeline = logicalDevice.createGraphicsPipeline(renderPass, pipeline);		
 				
 		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);		
-		descriptorSet = descriptorPool.allocateDescriptorSet(graphicsPipeline.getDescriptorSetLayouts()[0]);
+		descriptorSet = descriptorPool.allocateDescriptorSet(graphicsPipeline.getDescriptorSetLayouts());
 				
-		uniformBuffer = pipeline.getUniformBuffer();
-		uniformBuffer.getMatrix().setScale(new Vector3f(0.5f, 0.5f, 1.0f));
+		uniformBufferDescriptors = new ArrayList<>(pipeline.getUniformBuffers().size());
 		
-		uniformBufferDescriptor = logicalDevice.createUniformBuffer(uniformBuffer.getSize());	
-		logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), uniformBuffer.getSize(), 0, 0, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);				
+		for(int i = 0;i < pipeline.getUniformBuffers().size();i++) {
+			UniformBuffer buffer = pipeline.getUniformBuffers().get(i);
+			VulkanUniformBufferDescriptor uniformBufferDescriptor = logicalDevice.createUniformBuffer(buffer.getSize());	
+			
+			logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), buffer.getSize(), 0, i, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+			uniformBufferDescriptors.add(uniformBufferDescriptor);
+		}						
 	}
 	
 	public VulkanCommandBuffer record() {
@@ -107,11 +112,13 @@ public class VulkanRenderInfo extends RenderInfo {
 	private void updateUniformBuffers() {
 		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
 		
-		ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(uniformBuffer.getSize());
-		logicalDevice.mapUniformBuffer(uniformBufferDescriptor, uniformBuffer.fillBuffer(matrixBuffer));		
-		
-	}
-	
-	
+		for(int i = 0; i < uniformBufferDescriptors.size();i++) {
+			VulkanUniformBufferDescriptor uniformBufferDescriptor = uniformBufferDescriptors.get(i);
+			UniformBuffer buffer = pipeline.getUniformBuffers().get(i);
+			
+			ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(buffer.getSize());
+			logicalDevice.mapUniformBuffer(uniformBufferDescriptor, buffer.fillBuffer(matrixBuffer));	
+		}			
+	}	
 
 }

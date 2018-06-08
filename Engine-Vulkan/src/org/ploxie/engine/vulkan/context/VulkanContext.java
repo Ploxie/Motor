@@ -12,6 +12,8 @@ import org.ploxie.vulkan.VulkanApiVersion;
 import org.ploxie.vulkan.VulkanApplicationInfo;
 import org.ploxie.vulkan.VulkanInstance;
 import org.ploxie.vulkan.VulkanInstanceProperties;
+import org.ploxie.vulkan.debug.DefaultVulkanDebugReportCallback;
+import org.ploxie.vulkan.debug.VulkanDebugReportType;
 import org.ploxie.vulkan.device.VulkanLogicalDevice;
 import org.ploxie.vulkan.device.VulkanPhysicalDevice;
 import org.ploxie.vulkan.queue.VulkanDeviceQueueCreateInfo;
@@ -46,6 +48,11 @@ public class VulkanContext extends EngineContext {
 		VulkanInstanceProperties instanceProperties = Vulkan.createInstanceProperties(appInfo);
 
 		vulkanInstance = Vulkan.createInstance(instanceProperties);
+		
+		if (Vulkan.isValidation()) {
+			vulkanInstance.setupDebugging(new DefaultVulkanDebugReportCallback(), VulkanDebugReportType.WARNING,VulkanDebugReportType.ERROR);
+		}
+		
 		physicalDevice = vulkanInstance.getPhysicalDevices().get(0);
 		
 		VulkanQueueFamilyPropertiesList queueFamilyPropertiesList = physicalDevice.getQueueFamilyProperties();

@@ -1,5 +1,7 @@
 package org.ploxie.utils.math.vector;
 
+import java.nio.ByteBuffer;
+
 import org.ploxie.utils.math.Math;
 
 public class Vector3f implements Cloneable {
@@ -277,6 +279,11 @@ public class Vector3f implements Cloneable {
 		return this;
 	}
 
+	public ByteBuffer fillBuffer(final ByteBuffer byteBuffer) {
+		byteBuffer.asFloatBuffer().put(x).put(y).put(z);
+		return byteBuffer;
+	}
+	
 	@Override
 	public String toString() {
 		return "[x:" + x() + ", y:" + y() + ", z:" + z() + "]";

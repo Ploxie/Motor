@@ -15,7 +15,9 @@ import org.ploxie.engine.vulkan.display.VulkanWindow;
 import org.ploxie.engine.vulkan.scenegraph.VulkanRenderInfo;
 import org.ploxie.engine2.RenderEngine;
 import org.ploxie.engine2.model.Mesh;
-import org.ploxie.engine2.pipeline.UniformBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.CameraBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.TestBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.engine2.util.MeshGenerator;
 import org.ploxie.utils.Color;
@@ -71,10 +73,9 @@ public class VulkanRenderEngine extends RenderEngine {
 		
 		VulkanShaderModules shaderModules = VulkanShaderModules.builder().vertex(triangleVertShader).fragment(triangleFragShader).build();	
 		VulkanGraphicsPipelineProperties pipeline = new VulkanGraphicsPipelineProperties(shaderModules);
-		pipeline.setUniformBuffer(new UniformBuffer());
+		pipeline.getUniformBuffers().add(new CameraBuffer());
+		pipeline.getUniformBuffers().add(new TestBuffer());
 		
-		
-
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
 		
 		IntBuffer pWaitDstStageMask = memAllocInt(1);

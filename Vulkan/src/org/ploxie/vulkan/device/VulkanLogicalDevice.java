@@ -55,6 +55,7 @@ import org.ploxie.engine.display.Window;
 import org.ploxie.engine2.buffer.vertex.AttributeDescription;
 import org.ploxie.engine2.buffer.vertex.BindingDescription;
 import org.ploxie.engine2.buffer.vertex.VertexInputInfo;
+import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.utils.math.FastMath;
 import org.ploxie.utils.math.vector.Vector2i;
@@ -461,9 +462,21 @@ public class VulkanLogicalDevice {
 			VulkanShaderModules shaderModules = properties.getShaderModules();
 			VkPipelineShaderStageCreateInfo.Buffer shaderStages = createShaderStages(stack, shaderModules);
 					
-			VkDescriptorSetLayoutBinding.Buffer layoutBinding = VkDescriptorSetLayoutBinding.callocStack(2, stack);
+			List<UniformBuffer> uniformBuffers = properties.getUniformBuffers();
 			
-			layoutBinding
+			VkDescriptorSetLayoutBinding.Buffer layoutBinding = VkDescriptorSetLayoutBinding.callocStack(uniformBuffers.size(), stack);
+			
+			for(int i = 0 ; i < uniformBuffers.size();i++) {
+				layoutBinding
+					.get(i)
+					.binding(i)
+					.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+					.descriptorCount(1)
+					.stageFlags(VK_SHADER_STAGE_VERTEX_BIT)
+					.pImmutableSamplers(null);
+			}			
+			
+			/*layoutBinding
 				.get(0)
 				.binding(0)
 				.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
@@ -477,7 +490,7 @@ public class VulkanLogicalDevice {
 				.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
 				.descriptorCount(1)
 				.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT)
-				.pImmutableSamplers(null);
+				.pImmutableSamplers(null);*/
 			
 			VkDescriptorSetLayoutCreateInfo layoutCreateInfo = VkDescriptorSetLayoutCreateInfo
 					.callocStack(stack)

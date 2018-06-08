@@ -17,8 +17,8 @@ public class VulkanDescriptorPool {
 	private final VulkanLogicalDevice device;
 	private final long handle;
 	
-	public VulkanDescriptorSet allocateDescriptorSet(VulkanDescriptorLayout layout) {
-		return allocateDescriptorSets(layout)[0];
+	public VulkanDescriptorSet allocateDescriptorSet(VulkanDescriptorLayout... layouts) {
+		return allocateDescriptorSets(layouts)[0];
 	}
 	
 	public VulkanDescriptorSet[] allocateDescriptorSets(VulkanDescriptorLayout...descriptorLayouts) {

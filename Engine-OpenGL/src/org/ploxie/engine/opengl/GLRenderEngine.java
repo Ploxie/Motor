@@ -6,7 +6,7 @@ import org.lwjgl.opengl.GL20;
 import org.ploxie.engine.opengl.scenegraph.GLRenderInfo;
 import org.ploxie.engine2.RenderEngine;
 import org.ploxie.engine2.model.Mesh;
-import org.ploxie.engine2.pipeline.UniformBuffer;
+import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.util.MeshGenerator;
 import org.ploxie.opengl.pipeline.GLPipeline;
 import org.ploxie.opengl.shader.GLShaderModule;
