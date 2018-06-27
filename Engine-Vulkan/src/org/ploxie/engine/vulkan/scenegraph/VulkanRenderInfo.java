@@ -16,10 +16,12 @@ import org.lwjgl.vulkan.VkWriteDescriptorSet;
 import org.ploxie.engine.vulkan.context.DescriptorPoolManager.DescriptorPoolType;
 import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine.vulkan.context.VulkanToolkit;
+import org.ploxie.engine.vulkan.display.VulkanWindow;
 import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.Pipeline;
 import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.scenegraph.RenderInfo;
+import org.ploxie.engine2.scenegraph.RenderList;
 import org.ploxie.engine2.util.BufferUtils;
 import org.ploxie.utils.math.matrix.Matrix4f;
 import org.ploxie.utils.math.vector.Vector3f;
@@ -57,44 +59,48 @@ public class VulkanRenderInfo extends RenderInfo {
 	private VulkanRect2D scissor;
 	private VulkanGraphicsPipeline graphicsPipeline;
 	private VulkanDescriptorSet descriptorSet;
-	private List<VulkanUniformBufferDescriptor> uniformBufferDescriptors;
-				
+	private List<VulkanUniformBufferDescriptor> uniformBufferDescriptors;				
 	
-	public VulkanRenderInfo(Mesh mesh, VulkanGraphicsPipelineProperties pipeline) {
+	public VulkanRenderInfo(Mesh mesh, Pipeline pipeline) {
 		super(mesh, pipeline);
-		pipeline.setVertexInputInfo(mesh.getVertexInputInfo());
+		VulkanGraphicsPipelineProperties vulkanPipeline = new VulkanGraphicsPipelineProperties(pipeline);
 		
-		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
+		vulkanPipeline.setVertexInputInfo(mesh.getVertexInputInfo());
+		
+		VulkanWindow window = VulkanContext.getInstance().getWindow();
+		
+		VulkanLogicalDevice logicalDevice = VulkanContext.getInstance().getLogicalDevice();
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
 		VulkanCommandPool commandPool = logicalDevice.getCommandPool(graphicsFamilyIndex);
 		VulkanQueue queue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);		
-		VulkanDescriptorPool descriptorPool = VulkanContext.getDescriptorPoolManager().getDescriptorPool(DescriptorPoolType.PRIMARY);
+		VulkanDescriptorPool descriptorPool = VulkanContext.getInstance().getDescriptorPoolManager().getDescriptorPool(DescriptorPoolType.PRIMARY);
 		
 		vertexBuffer = VulkanBufferUtils.createDeviceLocalBuffer(logicalDevice, BufferUtils.createByteBuffer(mesh.getVertices(), mesh.getVertexLayout()), queue, commandPool, VulkanBufferUsageFlag.VERTEX);
 		indexBuffer = VulkanBufferUtils.createDeviceLocalBuffer(logicalDevice, BufferUtils.createByteBuffer(mesh.getIndices()), queue, commandPool, VulkanBufferUsageFlag.INDEX);		
 		
-		renderPass = logicalDevice.createRenderPass(VulkanContext.getWindow().getSwapchain().getImageFormat().getColorFormat(), VK_FORMAT_D32_SFLOAT);
-		viewport = VulkanViewportProperties.builder().dimensions(VulkanContext.getWindow().getExtent()).build();
-		scissor = new VulkanRect2D(new VulkanOffset2D(0,0), VulkanContext.getWindow().getExtent());		
+		renderPass = logicalDevice.createRenderPass(window.getSwapchain().getImageFormat().getColorFormat(), VK_FORMAT_D32_SFLOAT);
+		viewport = VulkanViewportProperties.builder().dimensions(window.getExtent()).build();
+		scissor = new VulkanRect2D(new VulkanOffset2D(0,0), window.getExtent());						
+		
+		graphicsPipeline = logicalDevice.createGraphicsPipeline(renderPass, vulkanPipeline);	
 				
-		graphicsPipeline = logicalDevice.createGraphicsPipeline(renderPass, pipeline);		
-				
-		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);		
+		commandBuffer = logicalDevice.createCommandBuffer(commandPool, false);	
 		descriptorSet = descriptorPool.allocateDescriptorSet(graphicsPipeline.getDescriptorSetLayouts());
 				
-		uniformBufferDescriptors = new ArrayList<>(pipeline.getUniformBuffers().size());
+		uniformBufferDescriptors = new ArrayList<>(vulkanPipeline.getUniformBuffers().size());
 		
-		for(int i = 0;i < pipeline.getUniformBuffers().size();i++) {
-			UniformBuffer buffer = pipeline.getUniformBuffers().get(i);
+		for(int i = 0;i < vulkanPipeline.getUniformBuffers().size();i++) {
+			UniformBuffer buffer = vulkanPipeline.getUniformBuffers().get(i);
 			VulkanUniformBufferDescriptor uniformBufferDescriptor = logicalDevice.createUniformBuffer(buffer.getSize());	
 			
 			logicalDevice.updateDescriptorSet(descriptorSet, uniformBufferDescriptor.getBuffer().getHandle(), buffer.getSize(), 0, i, VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
 			uniformBufferDescriptors.add(uniformBufferDescriptor);
 		}						
 	}
-	
-	public VulkanCommandBuffer record() {
-		commandBuffer.beginSecondary(renderPass, renderPass.getSubPasses().get(0), VulkanContext.getWindow().getCurrentFrameBuffer(), false);					
+		
+	@Override
+	public void record(RenderList renderList) {
+		commandBuffer.beginSecondary(renderPass, renderPass.getSubPasses().get(0), VulkanContext.getInstance().getWindow().getCurrentFrameBuffer(), false);					
 		commandBuffer.setViewport(viewport);
 		commandBuffer.setScissor(scissor);				
 		commandBuffer.bindPipeline(graphicsPipeline);		
@@ -106,11 +112,11 @@ public class VulkanRenderInfo extends RenderInfo {
 		
 		updateUniformBuffers();
 		
-		return commandBuffer;
+		((VulkanRenderList)renderList).record(commandBuffer);
 	}
 	
 	private void updateUniformBuffers() {
-		VulkanLogicalDevice logicalDevice = VulkanContext.getLogicalDevice();
+		VulkanLogicalDevice logicalDevice = VulkanContext.getInstance().getLogicalDevice();
 		
 		for(int i = 0; i < uniformBufferDescriptors.size();i++) {
 			VulkanUniformBufferDescriptor uniformBufferDescriptor = uniformBufferDescriptors.get(i);
@@ -119,6 +125,9 @@ public class VulkanRenderInfo extends RenderInfo {
 			ByteBuffer matrixBuffer = BufferUtils.createByteBuffer(buffer.getSize());
 			logicalDevice.mapUniformBuffer(uniformBufferDescriptor, buffer.fillBuffer(matrixBuffer));	
 		}			
-	}	
+	}
+
+
+	
 
 }

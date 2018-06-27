@@ -6,7 +6,7 @@ import org.ploxie.engine2.pipeline.Pipeline;
 import lombok.Getter;
 
 @Getter
-public class RenderInfo {
+public abstract class RenderInfo {
 
 	private Mesh mesh;
 	protected Pipeline pipeline;
@@ -15,5 +15,7 @@ public class RenderInfo {
 		this.mesh = mesh;
 		this.pipeline = pipeline;
 	}
+	
+	public abstract void record(RenderList renderList);
 	
 }

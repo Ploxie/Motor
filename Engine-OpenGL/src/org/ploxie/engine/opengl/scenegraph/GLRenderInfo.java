@@ -7,15 +7,13 @@ import java.util.List;
 import org.ploxie.engine.utils.BufferUtils;
 import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.Pipeline;
-import org.ploxie.engine2.pipeline.shader.ShaderModules;
-import org.ploxie.engine2.pipeline.uniformbuffers.CameraBuffer;
 import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
 import org.ploxie.engine2.scenegraph.RenderInfo;
+import org.ploxie.engine2.scenegraph.RenderList;
 import org.ploxie.opengl.buffer.UniformBufferObject;
 import org.ploxie.opengl.buffer.VertexBufferObject;
 import org.ploxie.opengl.pipeline.GLPipeline;
 import org.ploxie.opengl.shader.GLShaderModules;
-import org.ploxie.utils.math.vector.Vector3f;
 
 public class GLRenderInfo extends RenderInfo{
 
@@ -23,9 +21,9 @@ public class GLRenderInfo extends RenderInfo{
 	private VertexBufferObject vbo;
 	private List<UniformBufferObject> uniformBufferObjects;
 			
-	public GLRenderInfo(Mesh mesh, GLPipeline pipeline) {
+	public GLRenderInfo(Mesh mesh, Pipeline pipeline) {
 		super(mesh, pipeline);
-		this.pipeline = pipeline;
+		this.pipeline = new GLPipeline(pipeline);
 		
 		vbo = new VertexBufferObject();		
 		vbo.setData(mesh);	
@@ -39,13 +37,11 @@ public class GLRenderInfo extends RenderInfo{
 			uniformBufferObjects.add(ubo);
 		}		
 	}
-	
-	
-	
-	public void render() {
+
+	@Override
+	public void record(RenderList renderList) {
 		GLShaderModules shader = pipeline.getShaderModules();		
-		shader.bind();
-		
+		shader.bind();	
 		
 		for(int i = 0 ; i < uniformBufferObjects.size();i++) {
 			UniformBufferObject ubo = uniformBufferObjects.get(i);

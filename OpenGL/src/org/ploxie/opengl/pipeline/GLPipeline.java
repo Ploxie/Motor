@@ -6,9 +6,13 @@ import org.ploxie.opengl.shader.GLShaderModules;
 
 public class GLPipeline extends Pipeline{
 
+	public GLPipeline(Pipeline pipeline) {
+		super(pipeline.getShaderModules());
+		setUniformBuffers(pipeline.getUniformBuffers());
+	}
+	
 	public GLPipeline(GLShaderModules shaderModules) {
 		super(shaderModules);
-		// TODO Auto-generated constructor stub
 	}
 	
 	@Override

@@ -6,6 +6,7 @@ import org.ploxie.engine.vulkan.context.VulkanContext;
 import org.ploxie.engine2.CoreEngine;
 import org.ploxie.engine2.CoreSystem;
 import org.ploxie.engine2.RenderEngine;
+import org.ploxie.game.scene.GameScene;
 
 public class BootstrapVulkan {
 
@@ -19,13 +20,15 @@ public class BootstrapVulkan {
 
 		CoreEngine engine = new CoreEngine();
 		CoreSystem system = new CoreSystem();
-		RenderEngine renderEngine = null;
 		
-		VulkanContext.initialize();
-		renderEngine = new VulkanRenderEngine();	
+		VulkanContext.create();
+		RenderEngine renderEngine = new VulkanRenderEngine();
+		
+		renderEngine.setSceneGraph(new GameScene());
 		
 		system.setRenderEngine(renderEngine);
-		engine.init(system);
+		
+		engine.initialize(system);
 		engine.start();
 	}
 

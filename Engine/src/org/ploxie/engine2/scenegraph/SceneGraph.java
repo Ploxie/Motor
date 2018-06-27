@@ -1,53 +1,66 @@
 package org.ploxie.engine2.scenegraph;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.ploxie.engine2.context.EngineContext;
+import org.ploxie.engine2.scenegraph.component.Component;
+import org.ploxie.engine2.scenegraph.component.ComponentManager;
+import org.ploxie.engine2.scenegraph.component.interfaces.Renderable;
+import org.ploxie.engine2.scenegraph.component.interfaces.Updatable;
 import org.ploxie.utils.math.Transform;
 
-public class SceneGraph{
+import lombok.Getter;
+
+public abstract class SceneGraph {
 
 	private GameObject rootObject;
+	private List<Updatable> updatables = new ArrayList<>();
+	@Getter
+	private List<Renderable> renderables = new ArrayList<>();
 
-	public SceneGraph(){
-		
+	public SceneGraph() {
 		rootObject = new GameObject();
 		rootObject.setWorldTransform(new Transform());
+		updatables = new ArrayList<>();
+		renderables = new ArrayList<>();
 	}
 	
-	public void render(){
-		
-		rootObject.render();
-	}
-	
-	
-	public void renderShadows(){
-		
-		rootObject.renderShadows();
-	}
-	
-	/*public void record(RenderList renderList){
+	public abstract void initialize();
 
-		rootObject.record(renderList);
-	}*/
+	public void render() {
+		for(Renderable r : renderables) {
+			r.getRenderInfo();
+		}
+	}
 	
-	public void update(){
+	public void update() {
+		for(Updatable u : updatables) {
+			u.update();
+		}
+	}
 
-		rootObject.update();
-	}
-	
-	public void input(){
-		rootObject.input();
-	}
-	
-	public void shutdown()
-	{
-		rootObject.shutdown();
+	public void shutdown() {
+		//rootObject.shutdown();
 	}
 
 	public GameObject getRoot() {
 		return rootObject;
 	}
-	
-	public void addObject(GameObject object){
-		rootObject.addChild(object);
-	}
 
+	public void addObject(GameObject object) {
+		rootObject.setSceneGraph(this);
+		rootObject.addChild(object);
+		
+	}
+	
+	protected void addComponent(Component component) {
+		if(component instanceof Renderable) {
+			renderables.add((Renderable) component);
+		}
+		if(component instanceof Updatable) {
+			updatables.add((Updatable) component);
+		}
+		component.initialize();
+	}
 }

@@ -18,16 +18,16 @@ public class CoreSystem {
 	private Window window;
 
 	@Getter
-	private Input input;
+	private Input input;	
 
 	private GLFWErrorCallback errorCallback;
-
+	
 	public void initialize() {
 
 		GLFW.glfwSetErrorCallback(errorCallback = GLFWErrorCallback.createPrint(System.err));
 
-		window = EngineContext.getWindow();
-		input = EngineContext.getInput();
+		window = EngineContext.getInstance().getWindow();
+		input = EngineContext.getInstance().getInput();
 
 		window.create();
 		input.create(window.getHandle());

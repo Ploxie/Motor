@@ -62,9 +62,9 @@ public class VulkanWindow extends Window {
 	
 
 	public VulkanWindow() {
-		super(VulkanContext.getConfiguration().getDisplayTitle() + " (Vulkan)",
-				VulkanContext.getConfiguration().getWindowWidth(),
-				VulkanContext.getConfiguration().getWindowHeight());
+		super(VulkanContext.getInstance().getConfiguration().getDisplayTitle() + " (Vulkan)",
+				VulkanContext.getInstance().getConfiguration().getWindowWidth(),
+				VulkanContext.getInstance().getConfiguration().getWindowHeight());
 	}
 
 	@Override
@@ -78,7 +78,7 @@ public class VulkanWindow extends Window {
 			throw new RuntimeException("Failed to create window");
 		}
 
-		logicalDevice = VulkanContext.getLogicalDevice();
+		logicalDevice = VulkanContext.getInstance().getLogicalDevice();
 
 		int graphicsFamilyIndex = logicalDevice.getPhysicalDevice().getQueueFamilyProperties().getFirstGraphicsQueue().getIndex();
 		graphicsQueue = logicalDevice.getDeviceQueue(graphicsFamilyIndex, 0);

@@ -9,33 +9,18 @@ import org.ploxie.engine2.model.Mesh;
 import org.ploxie.engine2.pipeline.uniformbuffers.CameraBuffer;
 import org.ploxie.engine2.pipeline.uniformbuffers.TestBuffer;
 import org.ploxie.engine2.pipeline.uniformbuffers.UniformBuffer;
+import org.ploxie.engine2.scenegraph.component.interfaces.Renderable;
 import org.ploxie.engine2.util.MeshGenerator;
 import org.ploxie.opengl.pipeline.GLPipeline;
 import org.ploxie.opengl.shader.GLShaderModule;
 import org.ploxie.opengl.shader.GLShaderModules;
 
 public class GLRenderEngine extends RenderEngine{
-
-	private TestGameObject object;
 	
 	@Override
 	public void initialize() {
+		GL.createCapabilities();				
 		super.initialize();
-		GL.createCapabilities();
-		
-		Mesh mesh = MeshGenerator.NDCQuad2D();		
-		
-		GLShaderModule vertexShader = new GLShaderModule(GL20.GL_VERTEX_SHADER, "res/shader.vert");
-		GLShaderModule fragmentShader = new GLShaderModule(GL20.GL_FRAGMENT_SHADER, "res/shader.frag");
-		
-		GLShaderModules shaderModules = GLShaderModules.builder().vertexShader(vertexShader).fragmentShader(fragmentShader).build().init();
-		
-		GLPipeline pipeline = new GLPipeline(shaderModules);
-		pipeline.getUniformBuffers().add(new CameraBuffer());
-		pipeline.getUniformBuffers().add(new TestBuffer());
-		
-		object = new TestGameObject(new GLRenderInfo(mesh, pipeline));
-		
 	}
 	
 	@Override
@@ -43,7 +28,10 @@ public class GLRenderEngine extends RenderEngine{
 		GL11.glClearColor(0.5f, 0.5f, 0.55f, 0f);
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
 		
-		object.render();	
+		
+		for(Renderable r : sceneGraph.getRenderables()) {
+			r.getRenderInfo().record(null);
+		}
 		
 	}
 

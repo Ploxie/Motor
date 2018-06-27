@@ -3,18 +3,19 @@ package org.ploxie.engine2;
 import org.ploxie.engine2.scenegraph.SceneGraph;
 
 import lombok.Getter;
+import lombok.Setter;
 
 public abstract class RenderEngine {
 	
-	@Getter
+	@Getter@Setter
 	protected SceneGraph sceneGraph;
-	
+		
 	public void initialize() {
-		sceneGraph = new SceneGraph();
+		sceneGraph.initialize();
 	}
-	
-	public void update() {
-		sceneGraph.update();
+		
+	public void update() {		
+		sceneGraph.update();		
 	}
 	
 	public abstract void render();

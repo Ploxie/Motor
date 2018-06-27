@@ -10,9 +10,9 @@ import org.ploxie.engine2.display.Window;
 public class GLWindow extends Window{
 
 	public GLWindow() {
-		super(GLContext.getConfiguration().getDisplayTitle()+ " (OpenGL)",
-			  GLContext.getConfiguration().getWindowWidth(),
-			  GLContext.getConfiguration().getWindowHeight());		
+		super(GLContext.getInstance().getConfiguration().getDisplayTitle()+ " (OpenGL)",
+			  GLContext.getInstance().getConfiguration().getWindowWidth(),
+			  GLContext.getInstance().getConfiguration().getWindowHeight());		
 	}
 
 	@Override
@@ -56,8 +56,8 @@ public class GLWindow extends Window{
 		GLFW.glfwSetWindowSize(getHandle(), width, height);
 		setHeight(height);
 		setWidth(width);
-		EngineContext.getConfiguration().setWindowWidth(width);
-		EngineContext.getConfiguration().setWindowHeight(height);
+		EngineContext.getInstance().getConfiguration().setWindowWidth(width);
+		EngineContext.getInstance().getConfiguration().setWindowHeight(height);
 		// TODO set camera projection
 	}
 	

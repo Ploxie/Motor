@@ -33,6 +33,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.vulkan.VK10.*;
 
 import java.nio.LongBuffer;
+import java.util.List;
 
 import lombok.Data;
 
@@ -308,9 +309,20 @@ public class VulkanCommandBuffer {
 		vkCmdExecuteCommands(internal, secondaryCommandBuffer.getInternal());
 	}
 
-	public void execute(VulkanCommandBuffer... secondaryCommandBuffers) {
+	public void executes(VulkanCommandBuffer... secondaryCommandBuffers) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			PointerBuffer pointerBuffer = stack.callocPointer(secondaryCommandBuffers.length);
+			for (VulkanCommandBuffer buffer : secondaryCommandBuffers) {
+				pointerBuffer.put(buffer.getInternal());
+			}
+			pointerBuffer.clear();
+			vkCmdExecuteCommands(internal, pointerBuffer);
+		}
+	}
+	
+	public void executes(List<VulkanCommandBuffer> secondaryCommandBuffers) {
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			PointerBuffer pointerBuffer = stack.callocPointer(secondaryCommandBuffers.size());
 			for (VulkanCommandBuffer buffer : secondaryCommandBuffers) {
 				pointerBuffer.put(buffer.getInternal());
 			}

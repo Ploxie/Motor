@@ -12,7 +12,7 @@ public class CoreEngine {
 	private boolean isRunning;
 	private CoreSystem system;
 
-	public void init(CoreSystem system) {
+	public void initialize(CoreSystem system) {
 		this.system = system;
 		system.initialize();
 	}
@@ -51,7 +51,7 @@ public class CoreEngine {
 				render = true;
 				unprocessedTime -= frameTime;
 
-				if (EngineContext.getWindow().isCloseRequested()) {
+				if (EngineContext.getInstance().getWindow().isCloseRequested()) {
 					stop();
 				}
 

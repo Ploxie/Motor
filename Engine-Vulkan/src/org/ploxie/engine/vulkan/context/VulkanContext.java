@@ -27,24 +27,39 @@ import lombok.Getter;
 public class VulkanContext extends EngineContext {
 	
 	@Getter
-	private static VulkanInstance vulkanInstance;
+	private VulkanInstance vulkanInstance;
 	@Getter
-	private static VulkanPhysicalDevice physicalDevice;
+	private VulkanPhysicalDevice physicalDevice;
 	@Getter
-	private static VulkanLogicalDevice logicalDevice;
+	private VulkanLogicalDevice logicalDevice;
 	@Getter
-	private static VulkanQueue graphicsQueue;
+	private VulkanQueue graphicsQueue;
 	@Getter
-	private static DescriptorPoolManager descriptorPoolManager;
+	private DescriptorPoolManager descriptorPoolManager;
 	
-	public static void initialize() {
-		EngineContext.initialize();
+	protected VulkanContext() {
+		
+	}
+	
+	public static VulkanContext create() {
+		instance = new VulkanContext();
+		getInstance().initialize();
+		return (VulkanContext) instance;
+	}
+	
+	public static VulkanContext getInstance() {
+		return (VulkanContext) instance;
+	}
+	
+	@Override
+	protected void initialize() {
+		super.initialize();
 		
 		if (!GLFWVulkan.glfwVulkanSupported()) {
 			throw new AssertionError("GLFW failed to find the Vulkan loader");
 		}
 
-		VulkanApplicationInfo appInfo = new VulkanApplicationInfo(VulkanContext.getConfiguration().getDisplayTitle(), "Engine", 1, VulkanApiVersion.create(1, 0, 2));
+		VulkanApplicationInfo appInfo = new VulkanApplicationInfo(getConfiguration().getDisplayTitle(), "Engine", 1, VulkanApiVersion.create(1, 0, 2));
 		VulkanInstanceProperties instanceProperties = Vulkan.createInstanceProperties(appInfo);
 
 		vulkanInstance = Vulkan.createInstance(instanceProperties);
@@ -70,7 +85,7 @@ public class VulkanContext extends EngineContext {
 		
 	}
 
-	public static VulkanWindow getWindow() {
+	public VulkanWindow getWindow() {
 		return (VulkanWindow) window;
 	}
 	

@@ -56,7 +56,7 @@ public class ComponentManager {
 	public void render() {
 		for (Component c : renderableComponents) {
 			if (c.isEnabled) {
-				((Renderable) c).render();
+				((Renderable) c).getRenderInfo();
 			}
 		}
 		for (Component c : guiComponents) {
